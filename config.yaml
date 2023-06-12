@@ -1,0 +1,87 @@
+mqtt_broker_port: 1883
+mqtt_keepalive: 5
+mqtt_tls_enabled: False
+mqtt_listening_topic: '/curio/basement/lighting'
+mqtt_publish_topic: '/curio/basement/command'
+mqtt_publish_mode_topic: '/curio/basement/command/mode'
+
+strands:
+  1:
+    name: dots 2 inch
+    size: 20
+    type: ws2811
+    pin: 18
+    ids:
+      0:
+        name: Headlight right
+        group: headlights
+        animations:
+          default: orange
+          engage: blue pulsing
+          stealth: off
+          landing: yellow
+          combat: red pulsing
+      8:
+        name: Landing gear right
+        group: landing gear
+        animations:
+          default: off
+          engage: blue pulsing
+          stealth: off
+          landing: yellow pulsing
+          combat: off
+      12:
+        name: Upper gun barrel
+        group: weapons
+        animations:
+          default: off
+          engage: blue pulsing
+          stealth: off
+          landing: off
+          combat: red pulsing
+
+    id_ranges:
+      0:
+        group: Front engines
+        ids: 1,2,3,4,5
+        animations:
+          default: yellow with random pulses
+          engage: blue pulsing
+          stealth: off
+          landing: orange with random pulses
+          combat: orange pulsing
+      1:
+        group: Landing lights
+        ids: 6,7,9,10,11
+        animations:
+          default: red with slow blink
+          engage: off
+          stealth: off
+          landing: red and white pulses
+          combat: off
+      2:
+        group: Rear engine exhaust
+        ids: 13,14,15,16,17,18,19,20
+        animations:
+          default: yellow with random pulses
+          engage: blue pulsing
+          stealth: off
+          landing: orange with random pulses
+          combat: orange pulsing
+
+  2:
+    name: engine led strip
+    size: 150
+    type: ws2811
+    pin: 21
+    id_ranges:
+      0:
+        group: Hyper Drive
+        id_start: 0
+        id_end: 90
+        animations:
+          default: blue gentle pulse
+          engage: blue warp
+          stealth: off
+          landing: white gentle pulse
+          combat: blue pulsing

@@ -1,0 +1,43 @@
+body {
+/*    font-family: 'Source Code Pro', monospace;*/
+    font-family: 'Teko', sans-serif;
+}
+
+.btn {
+/*
+    padding: 3.5em 2.5em;
+    font-size: 2.7em;
+*/
+    padding: 0.9em 0.3em;
+    font-size: 2rem;
+    font-family: 'Orbitron', sans-serif;
+    /*font-family: 'Source Code Pro', sans-serif; */
+    font-weight: bold;
+    box-shadow: 10px 15px 15px 0 rgba(0,0,0,0.33), 0 6px 8px 0 rgba(0,0,0,0.19);
+}
+
+.col {
+    padding-top: 10px;
+}
+
+.row {
+    padding-top: 18px;
+}
+
+#subtitle {
+    color: rgb(255, 255, 255);
+    font-size: 1.5em;
+}
+
+#status {
+    color: rgb(60, 54, 138);
+    font-size: 2.0em;
+    font-weight: bold;
+}
+
+.navbar-brand {
+    font-size: 1.6em;
+    font-weight: bold;
+}
+
+
