@@ -8,20 +8,23 @@ Puts long-running tasks into processes that can be tracked and killed
 
 """
 
-from __main__ import app, log, os, mqtt_client, settings
+from __main__ import app, mqtt_client
 from functions import func_rainbow, func_color, func_clear, get_status
 from multiprocessing import Process
 from flask import render_template, request, jsonify
 
+import config
+import os
+
 running_processes = []
 
-def handle_mqtt_message(message, log, settings):
+def handle_mqtt_message(message):
     data = dict(
         topic=message.topic,
         payload=message.payload.decode()
     )
     # TODO: Have an array of all commands used throughout
-    log.info('Received MQTT message on topic: {topic} with payload: {payload}'.format(**data))
+    config.log.info('Received MQTT message on topic: {topic} with payload: {payload}'.format(**data))
     payload = data['payload']
     if payload == 'blue':
         blue_view()
@@ -44,19 +47,20 @@ def handle_mqtt_message(message, log, settings):
 # Web route pages
 @app.route("/", methods=['GET', 'POST'])
 def index():
-    log.info("User is browsing start page")
+    config.log.info("User is browsing start page")
     return render_template("index.html", status=get_status().upper())
 
 # TODO: Remove
 @app.route("/service", methods=['GET'])
 def service():
-    log.info("User is browsing service page")
+    config.log.info("User is browsing service page")
     return render_template("service.html")
 
 @app.route("/mode/<string:mode>/", methods=["GET"])
 def action_mode(mode):
-    log.info("Action Mode set to {}".format(mode))
-    mqtt_client.publish(settings['mqtt_publish_mode_topic'], mode)
+    config.log.info("Action Mode set to {}".format(mode))
+    if mqtt_client:
+        mqtt_client.publish(config.setting('mqtt_publish_mode_topic'), mode)
     return "Trying to run action mode {}".format(mode)
 
 # ----------------------------
@@ -64,7 +68,7 @@ def action_mode(mode):
 def rainbow_view():
     msg = "Rainbow process called"
     start_new_animation(msg)
-    for light_strip in light_strips:
+    for light_strip in config.light_strips:
         start_process(func_rainbow, msg, light_strip)
     return msg
 
@@ -113,14 +117,14 @@ def off_view():
 def shutdown(param):
     stop_everything()
     msg = "Device shut down with parameter: " + param
-    log.info(msg)
+    config.log.info(msg)
     os.system('sudo shutdown ' + param)
 
 @app.route("/reboot", methods=["GET"])
 def reboot():
     stop_everything()
     msg = "Device reboot"
-    log.info(msg)
+    config.log.info(msg)
     os.system('sudo reboot')
 
 # Helpers
@@ -128,31 +132,33 @@ def start_new_animation(log_message, mqtt_message = None):
     if not mqtt_message:
         mqtt_message = log_message
     stop_everything()
-    log.info(log_message)
-    mqtt_client.publish(settings['mqtt_publish_topic'], mqtt_message)
+    config.log.info(log_message)
+    if mqtt_client:
+        mqtt_client.publish(config.setting('mqtt_publish_topic'), mqtt_message)
 
 # Process handling
 def start_process(ftarget, fname, arg=None):
     try:
         global running_processes
         proc = Process(target=ftarget, name=fname, args=arg)
-        log.info('Start and append to process list: ' + proc.name)
+        config.log.info('Start and append to process list: ' + proc.name)
         running_processes.append(proc)
         proc.daemon = True # Try Daemon, and kill
         proc.start()
         return proc
     except Exception as e:
-        log.error("Failed to start process " + fname + ': ' + str(e))
+        config.log.error("Failed to start process " + fname + ': ' + str(e))
     except KeyboardInterrupt:
-        log.warn("KeyboardInterrupt")
+        config.log.warn("KeyboardInterrupt")
 
 
 def stop_everything():
     global running_processes
-    log.info("Stopping long processes: {}".format(len(running_processes)))
+    if len(running_processes):
+        config.log.info("Stopping long processes: {}".format(len(running_processes)))
 
-    for p in running_processes:
-        log.debug("Stopping " + p.name)
-        running_processes.remove(p)
-        p.kill()
-        p.join()
+        for p in running_processes:
+            config.log.debug("Stopping " + p.name)
+            running_processes.remove(p)
+            p.kill()
+            p.join()

@@ -9,8 +9,14 @@ built upon: https://github.com/rpi-ws281x/rpi-ws281x-python/blob/master/examples
 __author___ = "Jay Crossler"
 __status__ = "Development"
 
-import logger
-from rpi_ws281x import PixelStrip, Color
+import platform
+import config
+
+if platform.system() == 'Darwin':
+    # Doesn't import on macs
+    from rpi_fake import PixelStrip, Color
+else:
+    from rpi_ws281x import PixelStrip, Color
 import time
 
 
@@ -20,29 +26,24 @@ LED_BRIGHTNESS = 255  # Set to 0 for darkest and 255 for brightest
 LED_INVERT = False    # True to invert the signal (when using NPN transistor level shift)
 LED_CHANNEL = 0       # set to '1' for GPIOs 13, 19, 41, 45 or 53
 
-
-log = logger.get_logger("Functions")
-
-light_strips = []
-
 status = 'None'
 stop_flag = False
 
+# TODO: Remove texts
 rainbow_text = "rainbow"
 off = "all off"
 
-def initialize_lighting(settings):
-    global light_strips
+def initialize_lighting():
 
     # Build Strip objects for multiple strands
-    for i in settings['strands']:
-        strip = settings['strands'][i]
+    for i in config.setting('strands'):
+        strip = config.setting('strands')[i]
         led_count = strip['size']
         pin = strip['pin']
         light_strip = PixelStrip(led_count, pin, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL)
         # Initialize the library (must be called once before other functions).
         light_strip.begin()
-        light_strips.append(light_strip)
+        config.light_strips.append(light_strip)
 
 
 def get_status():
@@ -62,7 +63,7 @@ def func_color(r, g, b):
     global stop_flag
     stop_flag = True
     set_status("Wipe: {}, {}, {}".format(r,g,b))
-    for light_strip in light_strips:
+    for light_strip in config.light_strips:
         color_wipe(light_strip, Color(r, g, b))
     return
 
@@ -77,7 +78,7 @@ def func_clear():
     global stop_flag
     stop_flag = True
     set_status(off)
-    for light_strip in light_strips:
+    for light_strip in config.light_strips:
         clear(light_strip)
     return
 
@@ -107,14 +108,14 @@ def run_rainbow(light_strip):
                 b = 80
 
         except KeyboardInterrupt:
-            log.warn("KeyboardInterrupt")
+            config.log.warn("KeyboardInterrupt")
             exit()
 
         except Exception as e:
-            log.error("Any error occurs: " + str(e))
+            config.log.error("Any error occurs: " + str(e))
             exit()
 
-    log.info('rainbow run stopped')
+    config.log.info('rainbow run stopped')
     reset_strip(light_strip)
     return
 
