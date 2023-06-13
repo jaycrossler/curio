@@ -6,6 +6,7 @@ light_strips = []
 settings = {}
 log = logger.get_logger('App')
 
+
 def initialize(app_name):
     global log, settings
     log = logger.get_logger(app_name)
@@ -28,6 +29,7 @@ def initialize(app_name):
             settings = merge_dictionaries(settings, _yaml_secrets)
             log.info("Secrets loaded")
 
+
 def setting(name, default_if_blank=None):
     if name in settings:
         val = settings[name]
@@ -38,9 +40,10 @@ def setting(name, default_if_blank=None):
         else:
             log.error('SETTING MISSING: {}'.format(name))
 
+
 def merge_dictionaries(source, destination):
     # """
-    # from: https://stackoverflow.com/questions/20656135/python-deep-merge-dictionary-data
+    # Sourced from: https://stackoverflow.com/questions/20656135/python-deep-merge-dictionary-data
     # """
     for key, value in source.items():
         if isinstance(value, dict):

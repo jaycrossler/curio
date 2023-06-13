@@ -13,7 +13,7 @@ import platform
 import config
 
 if platform.system() == 'Darwin':
-    # Doesn't import on macs
+    # This library doesn't import on Macintosh computers, ignore it and use a stub
     from rpi_fake import PixelStrip, Color
 else:
     from rpi_ws281x import PixelStrip, Color
@@ -32,6 +32,7 @@ stop_flag = False
 # TODO: Remove texts
 rainbow_text = "rainbow"
 off = "all off"
+
 
 def initialize_lighting():
 
@@ -63,7 +64,7 @@ def set_status(state):
 def func_color(r, g, b):
     global stop_flag
     stop_flag = True
-    set_status("Wipe: {}, {}, {}".format(r,g,b))
+    set_status("Wipe: {}, {}, {}".format(r, g, b))
     for light_strip in config.light_strips:
         color_wipe(light_strip, Color(r, g, b))
     return
@@ -82,6 +83,7 @@ def func_clear():
     for light_strip in config.light_strips:
         clear(light_strip)
     return
+
 
 def run_rainbow(light_strip):
     """Vary the colors in a rainbow pattern, slightly changing brightness, and
@@ -117,7 +119,7 @@ def reset_strip(strip):
 def clear(strip):
     """Clear all pixels."""
     for i in range(strip.numPixels()):
-        strip.setPixelColor(i, Color(0,0,0))
+        strip.setPixelColor(i, Color(0, 0, 0))
     strip.show()
 
 
@@ -145,12 +147,13 @@ def rainbow_cycle(strip, wait_ms=20, iterations=5):
                 break
             try:
                 strip.setPixelColor(i, wheel((int(i * 256 / strip.numPixels()) + j) & 255))
-            except IndexError as e:
+            except IndexError:
                 config.log.warn("IndexError using {} when numPixels is {} and"
                                 " length of leds is {}".format(i, strip.numPixels(), len(strip.leds)))
 
             strip.show()
             time.sleep(wait_ms / 1000.0)
+
 
 # Not Used:
 def rainbow(strip, wait_ms=20, iterations=1):
@@ -160,6 +163,7 @@ def rainbow(strip, wait_ms=20, iterations=1):
             strip.setPixelColor(i, wheel((i + j) & 255))
         strip.show()
         time.sleep(wait_ms / 1000.0)
+
 
 def theater_chase(strip, color, wait_ms=50, iterations=10):
     """Movie theater light style chaser animation."""
@@ -171,6 +175,7 @@ def theater_chase(strip, color, wait_ms=50, iterations=10):
             time.sleep(wait_ms / 1000.0)
             for i in range(0, strip.numPixels(), 3):
                 strip.setPixelColor(i + q, 0)
+
 
 def theater_chase_rainbow(strip, wait_ms=50):
     """Rainbow movie theater light style chaser animation."""

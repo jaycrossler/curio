@@ -11,12 +11,13 @@ Puts long-running tasks into processes that can be tracked and killed
 from __main__ import app, mqtt_client
 from functions import func_rainbow, func_color, func_clear, get_status
 from multiprocessing import Process
-from flask import render_template, request, jsonify
+from flask import render_template, request
 
 import config
 import os
 
 running_processes = []
+
 
 def handle_mqtt_message(message):
     data = dict(
@@ -43,12 +44,12 @@ def handle_mqtt_message(message):
             action_mode(mode)
 
 
-
 # Web route pages
 @app.route("/", methods=['GET', 'POST'])
 def index():
     config.log.info("User is browsing start page")
     return render_template("index.html", status=get_status().upper())
+
 
 # TODO: Remove
 @app.route("/service", methods=['GET'])
@@ -56,12 +57,14 @@ def service():
     config.log.info("User is browsing service page")
     return render_template("service.html")
 
+
 @app.route("/mode/<string:mode>/", methods=["GET"])
 def action_mode(mode):
     config.log.info("Action Mode set to {}".format(mode))
     if mqtt_client:
         mqtt_client.publish(config.setting('mqtt_publish_mode_topic'), mode)
     return "Trying to run action mode {}".format(mode)
+
 
 # ----------------------------
 @app.route("/rainbow", methods=["GET"])
@@ -73,27 +76,31 @@ def rainbow_view():
         start_process(func_rainbow, msg, light_strip)
     return msg
 
+
 # TODO: Have a generic color route
 @app.route("/blue", methods=["GET"])
 def blue_view():
     msg = "Color: Blue"
     start_new_animation(msg)
-    func_color(0,0,255)
+    func_color(0, 0, 255)
     return msg
+
 
 @app.route("/red", methods=["GET"])
 def red_view():
     msg = "Color: Red"
     start_new_animation(msg)
-    func_color(255,0,0)
+    func_color(255, 0, 0)
     return msg
+
 
 @app.route("/green", methods=["GET"])
 def green_view():
     msg = "Color: Green"
     start_new_animation(msg)
-    func_color(0,255,0)
+    func_color(0, 255, 0)
     return msg
+
 
 @app.route('/rgb', methods=['POST'])
 def rgb():
@@ -103,8 +110,9 @@ def rgb():
     msg = "Color: RGB: ({}, {}, {})".format(r, g, b)
 
     start_new_animation(msg)
-    func_color(r,g,b)
+    func_color(r, g, b)
     return msg
+
 
 @app.route("/all off", methods=["GET"])
 def off_view():
@@ -112,6 +120,7 @@ def off_view():
     start_new_animation(msg)
     func_clear()
     return msg
+
 
 # ------------------
 @app.route("/shutdown <param>", methods=["GET"])
@@ -121,6 +130,7 @@ def shutdown(param):
     config.log.info(msg)
     os.system('sudo shutdown ' + param)
 
+
 @app.route("/reboot", methods=["GET"])
 def reboot():
     stop_everything()
@@ -128,14 +138,16 @@ def reboot():
     config.log.info(msg)
     os.system('sudo reboot')
 
+
 # Helpers
-def start_new_animation(log_message, mqtt_message = None):
+def start_new_animation(log_message, mqtt_message=None):
     if not mqtt_message:
         mqtt_message = log_message
     stop_everything()
     config.log.info(log_message)
     if mqtt_client:
         mqtt_client.publish(config.setting('mqtt_publish_topic'), mqtt_message)
+
 
 # Process handling
 def start_process(ftarget, fname, arg=None):
@@ -144,7 +156,7 @@ def start_process(ftarget, fname, arg=None):
         proc = Process(target=ftarget, name=fname, args=(arg,))
         config.log.info('Start and append to process list: {} with argument {}'.format(proc.name, arg))
         running_processes.append(proc)
-        proc.daemon = True # Try Daemon, and kill
+        proc.daemon = True
         proc.start()
         return proc
     except Exception as e:

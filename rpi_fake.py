@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """
-Methods to call light effect functions - but stubbed out so that all functions work on a mac
+Methods to call light effect functions - but stubbed out so that all functions work on a macintosh
 """
+
 
 class RGBW(int):
     def __new__(self, r, g=None, b=None, w=None):
@@ -23,7 +24,7 @@ class RGBW(int):
 
     @property
     def b(self):
-        return (self) & 0xff
+        return self & 0xff
 
     @property
     def w(self):
@@ -45,13 +46,13 @@ class PixelStrip:
     leds = []
 
     def __init__(self, num, pin, freq_hz=800000, dma=10, invert=False,
-            brightness=255, channel=0, strip_type=None, gamma=None):
+                 brightness=255, channel=0, strip_type=None, gamma=None):
         self.num = num
         self.pin = pin
         self.brightness = brightness
         self.leds = []
         for i in range(num):
-            self.leds.append(Color(0,0,0))
+            self.leds.append(Color(0, 0, 0))
         print("Added a string with leds: {}".format(self.leds))
 
     def __getitem__(self, pos):

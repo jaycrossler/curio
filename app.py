@@ -10,7 +10,7 @@ and from within the process.
 from flask import Flask
 from flask_mqtt import Mqtt
 from flask_debugtoolbar import DebugToolbarExtension
-#import flask_monitoringdashboard as dashboard (Uses SciPy, which is hard to install, so skipped for now)
+# import flask_monitoringdashboard as dashboard (Uses SciPy, which is hard to install, so skipped for now)
 
 from functions import initialize_lighting
 import config
@@ -24,11 +24,11 @@ app_name = "Curio LED Manager"
 # TODO: Have a web page that modifies light groups, then assigns states and animations to them
 # TODO: Have an audio manager to also have sounds
 # TODO: Visualize light status on webpage, ideally on top of an image
-# TODO: Add requirements.txt to install: yaml, others
 
 # TODO: Consider moving app and mqtt into config
 mqtt_client = None
 app = None
+
 
 def initialize_config_and_app():
     """Load settings, set up app, and build mqtt routes
@@ -44,11 +44,11 @@ def initialize_config_and_app():
             raise ValueError
 
         app.config['MQTT_BROKER_URL'] = url
-        app.config['MQTT_USERNAME'] = config.setting('mqtt_username')  # Set this item when you need to verify username and password
-        app.config['MQTT_PASSWORD'] = config.setting('mqtt_password')  # Set this item when you need to verify username and password
+        app.config['MQTT_USERNAME'] = config.setting('mqtt_username')
+        app.config['MQTT_PASSWORD'] = config.setting('mqtt_password')
         app.config['MQTT_BROKER_PORT'] = config.setting('mqtt_broker_port', 1883)
         app.config['MQTT_KEEPALIVE'] = config.setting('mqtt_keepalive', 5)  # Set KeepAlive time in seconds
-        app.config['MQTT_TLS_ENABLED'] = config.setting('mqtt_tls_enabled', False)  # If your broker supports TLS, set it True
+        app.config['MQTT_TLS_ENABLED'] = config.setting('mqtt_tls_enabled', False)
 
         # MQTT handling
         mqtt_client = Mqtt(app)
@@ -58,13 +58,13 @@ def initialize_config_and_app():
     except gaierror:
         config.log.warn('MQTT could not connect - namespace lookup error')
 
-    app.config['SECRET_KEY'] = config.setting('flask_secret_key', '1234') # Enable flask session cookies
+    app.config['SECRET_KEY'] = config.setting('flask_secret_key', '1234')  # Enable flask session cookies
 
     if mqtt_client:
         @mqtt_client.on_connect()
         def handle_connect(client, userdata, flags, rc):
             if rc == 0:
-                config.log.info('MQTT Connected successfully')
+                config.log.info('MQTT connected: client {} and data {} and flags {}'.format(client, userdata, flags))
                 mqtt_client.subscribe(config.setting('mqtt_listening_topic'))
             else:
                 config.log.error('Bad MQTT connection, code:', rc)
@@ -85,8 +85,8 @@ def initialize_config_and_app():
 
     # Set up web page helpers
     DebugToolbarExtension(app)
-    #dashboard.bind(app)
-    import routes # This is a bit of a hack, just breaks the main page up into multiple pages
+    # dashboard.bind(app)
+    import routes  # This is a bit of a hack, just breaks the main page up into multiple pages
 
 
 # Initial application launcher
@@ -114,5 +114,4 @@ def start_flask_app():
 if __name__ == '__main__':
     initialize_config_and_app()
     initialize_lighting()
-    config.log.info("Settings imported info on {} strands, {} added".format(len(config.setting('strands')), len(config.light_strips)))
     start_flask_app()
