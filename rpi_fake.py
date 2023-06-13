@@ -37,18 +37,32 @@ def Color(red, green, blue, white=0):
     """
     return RGBW(red, green, blue, white)
 
+
 class PixelStrip:
+    num = 0
+    pin = 0
+    brightness = 0
+    leds = []
+
     def __init__(self, num, pin, freq_hz=800000, dma=10, invert=False,
             brightness=255, channel=0, strip_type=None, gamma=None):
-                pass
+        self.num = num
+        self.pin = pin
+        self.brightness = brightness
+        self.leds = []
+        for i in range(num):
+            self.leds.append(Color(0,0,0))
+        print("Added a string with leds: {}".format(self.leds))
+
     def __getitem__(self, pos):
-        return [0,0,0]
+        return self.leds[pos]
 
     def __setitem__(self, pos, value):
-        return [0,0,0]
+        self.leds[pos] = value
+        return self.leds[pos]
 
     def __len__(self):
-        return 0
+        return self.num
 
     def _cleanup(self):
         pass
@@ -63,32 +77,32 @@ class PixelStrip:
         pass
 
     def setPixelColor(self, n, color):
-        pass
+        self.leds[n] = color
 
     def setPixelColorRGB(self, n, red, green, blue, white=0):
-        pass
+        self.leds[n] = Color(red, green, blue)
 
     def getBrightness(self):
-        return 0
+        return self.brightness
 
     def setBrightness(self, brightness):
-        pass
+        self.brightness = brightness
 
     def getPixels(self):
-        return []
+        return self.leds
 
     def numPixels(self):
         """Return the number of pixels in the display."""
-        return 0
+        return self.num
 
     def getPixelColor(self, n):
-        return [0,0,0]
+        return self.leds[n]
 
     def getPixelColorRGB(self, n):
-        return RGBW([0,0,0])
+        return RGBW(self.leds[n])
 
     def getPixelColorRGBW(self, n):
-        return RGBW([0,0,0])
+        return RGBW(self.leds[n])
 
 
 # Shim for back-compatibility

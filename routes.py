@@ -66,7 +66,8 @@ def action_mode(mode):
 # ----------------------------
 @app.route("/rainbow", methods=["GET"])
 def rainbow_view():
-    msg = "Rainbow process called"
+    msg = "Rainbow process called, {} strips total".format(len(config.light_strips))
+
     start_new_animation(msg)
     for light_strip in config.light_strips:
         start_process(func_rainbow, msg, light_strip)
@@ -140,16 +141,14 @@ def start_new_animation(log_message, mqtt_message = None):
 def start_process(ftarget, fname, arg=None):
     try:
         global running_processes
-        proc = Process(target=ftarget, name=fname, args=arg)
-        config.log.info('Start and append to process list: ' + proc.name)
+        proc = Process(target=ftarget, name=fname, args=(arg,))
+        config.log.info('Start and append to process list: {} with argument {}'.format(proc.name, arg))
         running_processes.append(proc)
         proc.daemon = True # Try Daemon, and kill
         proc.start()
         return proc
     except Exception as e:
         config.log.error("Failed to start process " + fname + ': ' + str(e))
-    except KeyboardInterrupt:
-        config.log.warn("KeyboardInterrupt")
 
 
 def stop_everything():

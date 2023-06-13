@@ -10,10 +10,11 @@ and from within the process.
 from flask import Flask
 from flask_mqtt import Mqtt
 from flask_debugtoolbar import DebugToolbarExtension
-#import flask_monitoringdashboard as dashboard
+#import flask_monitoringdashboard as dashboard (Uses SciPy, which is hard to install, so skipped for now)
 
 from functions import initialize_lighting
 import config
+from socket import gaierror
 
 __author___ = "Jay Crossler"
 __status__ = "Development"
@@ -25,15 +26,16 @@ app_name = "Curio LED Manager"
 # TODO: Visualize light status on webpage, ideally on top of an image
 # TODO: Add requirements.txt to install: yaml, others
 
+# TODO: Consider moving app and mqtt into config
 mqtt_client = None
+app = None
 
-app = Flask(app_name)
-
-def initialize():
+def initialize_config_and_app():
     """Load settings, set up app, and build mqtt routes
     """
     global app, mqtt_client
 
+    app = Flask(app_name)
     config.initialize(app_name)
     app.debug = True
     try:
@@ -52,7 +54,9 @@ def initialize():
         mqtt_client = Mqtt(app)
 
     except ValueError:
-        config.log.debug('MQTT settings and secrets information was not entered, skipping MQTT')
+        config.log.warn('MQTT settings and secrets information was not entered, skipping MQTT')
+    except gaierror:
+        config.log.warn('MQTT could not connect - namespace lookup error')
 
     app.config['SECRET_KEY'] = config.setting('flask_secret_key', '1234') # Enable flask session cookies
 
@@ -85,8 +89,6 @@ def initialize():
     import routes # This is a bit of a hack, just breaks the main page up into multiple pages
 
 
-
-
 # Initial application launcher
 def start_flask_app():
     try:
@@ -110,6 +112,7 @@ def start_flask_app():
 
 
 if __name__ == '__main__':
-    initialize()
+    initialize_config_and_app()
     initialize_lighting()
+    config.log.info("Settings imported info on {} strands, {} added".format(len(config.setting('strands')), len(config.light_strips)))
     start_flask_app()

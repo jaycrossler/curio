@@ -40,6 +40,7 @@ def initialize_lighting():
         strip = config.setting('strands')[i]
         led_count = strip['size']
         pin = strip['pin']
+        config.log.info("Added light strip {} on pin {} size {}".format(i, pin, led_count))
         light_strip = PixelStrip(led_count, pin, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL)
         # Initialize the library (must be called once before other functions).
         light_strip.begin()
@@ -84,38 +85,14 @@ def func_clear():
 
 def run_rainbow(light_strip):
     """Vary the colors in a rainbow pattern, slightly changing brightness, and
-    quit if stop_flag set.
-
-    NOTE: Stop flag might not be needed as the process should be killed automatically."""
+    quit if stop_flag set."""
     global stop_flag
     stop_flag = False
 
-    b = 80
-    while not stop_flag:
-        try:
-            light_strip.setBrightness(b)
-            if not stop_flag:
-                rainbow_cycle(light_strip)
-                # theater_chase_rainbow(stripe)
-                b -= 10
-            if b <= 30:
-                while b <= 80 and not stop_flag:
-                    light_strip.setBrightness(b)
-                    rainbow_cycle(light_strip)
-                    # theater_chase_rainbow(stripe)
-                    if not stop_flag:
-                        b += 10
-                b = 80
+    config.log.info("Starting rainbow animation on strip with {} leds".format(light_strip.numPixels()))
 
-        except KeyboardInterrupt:
-            config.log.warn("KeyboardInterrupt")
-            exit()
+    rainbow_cycle(light_strip)
 
-        except Exception as e:
-            config.log.error("Any error occurs: " + str(e))
-            exit()
-
-    config.log.info('rainbow run stopped')
     reset_strip(light_strip)
     return
 
@@ -161,11 +138,17 @@ def rainbow_cycle(strip, wait_ms=20, iterations=5):
     global stop_flag
 
     for j in range(256 * iterations):
-        if not stop_flag:
-            for i in range(strip.numPixels()):
-                if not stop_flag:
-                    strip.setPixelColor(i, wheel(
-                        (int(i * 256 / strip.numPixels()) + j) & 255))
+        if stop_flag:
+            break
+        for i in range(strip.numPixels()):
+            if stop_flag:
+                break
+            try:
+                strip.setPixelColor(i, wheel((int(i * 256 / strip.numPixels()) + j) & 255))
+            except IndexError as e:
+                config.log.warn("IndexError using {} when numPixels is {} and"
+                                " length of leds is {}".format(i, strip.numPixels(), len(strip.leds)))
+
             strip.show()
             time.sleep(wait_ms / 1000.0)
 
