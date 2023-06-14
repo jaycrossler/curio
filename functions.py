@@ -158,8 +158,12 @@ def rainbow_cycle(strip, wait_ms=20, iterations=5):
 
 def setup_lights_from_configuration(strands_config):
     # Expects that light strips have been configured, then sets starting colors and animations
+    if not strands_config:
+        strands_config = config.settings['strands']
+    
     strand_id = 0
     for strand_name in strands_config:
+        config.log.info("Setting up default lights for strand - {}".format(strand_name))
         strand = config.light_strips[strand_id]
         data = strands_config[strand_name]
         ids_data = data['ids'] if 'ids' in data else []
@@ -187,6 +191,7 @@ def setup_lights_from_configuration(strands_config):
                 led = int(pin)
                 if led < strand.numPixels():
                     strand.setPixelColor(led, default_color)
+                    config.log.info("- Strand {} - Pixel {} - color: {}".format(strand_name, led, default_color))
                 else:
                     config.log.warning('Tried to set LED from invalid config entry: strand {} {}'.format(id_range_data_name, led))
 
@@ -198,7 +203,9 @@ def setup_lights_from_configuration(strands_config):
             default_color = parsed_anim['color']
             strand.setPixelColor(int(id_data_led), default_color)
 
+        config.log.info("- Strand {} - Pixels: {} - color: {}".format(strand_name, ids_data, default_color))
         strand_id += 1
+        strand.show()
 
 
 def parse_animation_text(text):

@@ -4,7 +4,7 @@ const indexLabels = {
     'greenBtn': 'green',
     'rainbowBtn': 'rainbow',
     'stopBtn': 'all off',
-    'serviceBtn': 'service'
+    'defaultsBtn': 'default animation'
 };
 const serviceLabels = {
     'homeBtn': 'home',
@@ -17,7 +17,8 @@ const requestIndexFunctions = {
     'blueBtn': '/blue',
     'greenBtn': '/green',
     'rainbowBtn': '/rainbow',
-    'stopBtn': '/all off'
+    'stopBtn': '/all off',
+    'defaultsBtn': '/defaults'
 };
 
 // noinspection JSUnusedGlobalSymbols
@@ -49,7 +50,7 @@ function goto(url) {
 
 function setupIndexPage() {
     try {
-        document.getElementById('serviceBtn').setAttribute('onclick', "goto('/service',)");
+        //document.getElementById('serviceBtn').setAttribute('onclick', "goto('/service',)");
 
         try {
             for (const id in requestIndexFunctions) {

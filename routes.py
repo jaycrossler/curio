@@ -9,7 +9,7 @@ Puts long-running tasks into processes that can be tracked and killed
 """
 
 from __main__ import app, mqtt_client
-from functions import func_rainbow, func_color, func_clear, get_status
+from functions import func_rainbow, func_color, func_clear, get_status, setup_lights_from_configuration
 from multiprocessing import Process
 from flask import render_template, request
 
@@ -170,6 +170,15 @@ def off_view():
     msg = "Colors Off"
     start_new_animation(msg)
     func_clear()
+    return msg
+
+
+@app.route("/defaults", methods=["GET"])
+def defaults_view():
+    msg = "Default Animation"
+    start_new_animation(msg)
+    func_clear()
+    setup_lights_from_configuration(None)
     return msg
 
 
