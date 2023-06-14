@@ -15,7 +15,7 @@ from flask import render_template, request
 
 import config
 import os
-from colour import Color as Colour
+from colour import Color as Colour, RGB_TO_COLOR_NAMES
 
 running_processes = []
 use_processes = True  # Set to False for testing processese, but messes up animations
@@ -85,7 +85,7 @@ def rainbow_view():
     start_new_animation(msg)
     for light_strip in config.light_strips:
         start_process(func_rainbow, msg, light_strip)
-    return msg
+    return msg + "<br/> " + get_colors()
 
 
 @app.route("/blue", methods=["GET"])
@@ -93,7 +93,7 @@ def blue_view():
     msg = "Color: Blue"
     start_new_animation(msg)
     func_color(0, 0, 255)
-    return msg
+    return msg + "<br/> " + get_colors()
 
 
 @app.route("/red", methods=["GET"])
@@ -101,7 +101,7 @@ def red_view():
     msg = "Color: Red"
     start_new_animation(msg)
     func_color(255, 0, 0)
-    return msg
+    return msg + "<br/> " + get_colors()
 
 
 @app.route("/green", methods=["GET"])
@@ -109,7 +109,7 @@ def green_view():
     msg = "Color: Green"
     start_new_animation(msg)
     func_color(0, 255, 0)
-    return msg
+    return msg + "<br/> " + get_colors()
 
 
 @app.route('/rgb', methods=['POST'])
@@ -121,7 +121,7 @@ def rgb():
 
     start_new_animation(msg)
     func_color(r, g, b)
-    return msg
+    return msg + "<br/> " + get_colors()
 
 
 @app.route('/rgb/<string:rgb_text>')
@@ -146,7 +146,7 @@ def rgb_string(rgb_text):
 
     start_new_animation(msg)
     func_color(r, g, b)
-    return msg
+    return msg + "<br/> " + get_colors()
 
 
 @app.route('/color/<string:color_text>')
@@ -162,7 +162,7 @@ def rgb_color(color_text):
         func_color(r, g, b)
     except ValueError:
         msg = "Unrecognized Color: {}".format(color_text)
-    return msg
+    return msg + "<br/>" + get_colors()
 
 
 @app.route("/all off", methods=["GET"])
@@ -170,7 +170,7 @@ def off_view():
     msg = "Colors Off"
     start_new_animation(msg)
     func_clear()
-    return msg
+    return msg + "<br/> " + get_colors()
 
 
 @app.route("/defaults", methods=["GET"])
@@ -179,7 +179,7 @@ def defaults_view():
     start_new_animation(msg)
     func_clear()
     setup_lights_from_configuration(None)
-    return msg
+    return msg + "<br/> " + get_colors()
 
 
 @app.route('/colors')
@@ -194,6 +194,8 @@ def get_colors():
             color = Colour(rgb=(pixel.r / 255.0, pixel.g / 255.0, pixel.b / 255.0))
             hex_color = color.hex
             strip_html += "<span style='color:{}'>⬤</span>".format(hex_color)
+            if led % 40 == 39:
+                strip_html += " "  # Add a space every 40 lights
         output += "<div>{}:{}</div>".format(strip_num, strip_html)
     return output
 

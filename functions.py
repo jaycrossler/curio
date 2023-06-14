@@ -191,7 +191,7 @@ def setup_lights_from_configuration(strands_config):
                 led = int(pin)
                 if led < strand.numPixels():
                     strand.setPixelColor(led, default_color)
-                    config.log.info("- Strand {} - Pixel {} - color: {}".format(strand_name, led, default_color))
+                    # config.log.info("- Strand {} - Pixel {} - color: {}".format(strand_name, led, default_color))
                 else:
                     config.log.warning('Tried to set LED from invalid config entry: strand {} {}'.format(id_range_data_name, led))
 
@@ -203,7 +203,7 @@ def setup_lights_from_configuration(strands_config):
             default_color = parsed_anim['color']
             strand.setPixelColor(int(id_data_led), default_color)
 
-        config.log.info("- Strand {} - Pixels: {} - color: {}".format(strand_name, ids_data, default_color))
+        # config.log.info("- Strand {} - Pixels: {} - color: {}".format(strand_name, ids_data, default_color))
         strand_id += 1
         strand.show()
 
