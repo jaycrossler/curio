@@ -18,6 +18,7 @@ import os
 from colour import Color as Colour
 
 running_processes = []
+use_processes = True  # Set to False for testing processese, but messes up animations
 
 
 def handle_mqtt_message(message):
@@ -180,11 +181,11 @@ def get_colors():
         strip_num += 1
         strip_html = ""
         for led in range(strip.numPixels()):
-            pixel = strip.getPixelColor(led)
+            pixel = strip.getPixelColorRGB(led)
             color = Colour(rgb=(pixel.r / 255.0, pixel.g / 255.0, pixel.b / 255.0))
             hex_color = color.hex
             strip_html += "<span style='color:{}'>⬤</span>".format(hex_color)
-        output += "<div>{}: {}</div>".format(strip_num, strip_html)
+        output += "<div>{}:{}</div>".format(strip_num, strip_html)
     return output
 
 
@@ -218,12 +219,18 @@ def start_new_animation(log_message, mqtt_message=None):
 # Process handling
 def start_process(ftarget, fname, arg=None):
     try:
-        global running_processes
-        proc = Process(target=ftarget, name=fname, args=(arg,))
-        config.log.info('Start and append to process list: {} with argument {}'.format(proc.name, arg))
-        running_processes.append(proc)
-        proc.daemon = True
-        proc.start()
+        if use_processes:
+            global running_processes
+            proc = Process(target=ftarget, name=fname, args=(arg,))
+            config.log.info('Start and append to process list: {} with argument {}'.format(proc.name, arg))
+            running_processes.append(proc)
+            proc.daemon = True
+            proc.start()
+        else:
+            # Run directly without adding a process
+            ftarget(arg)
+            proc = None
+
         return proc
     except Exception as e:
         config.log.error("Failed to start process " + fname + ': ' + str(e))

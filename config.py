@@ -29,6 +29,9 @@ def initialize(app_name):
             settings = merge_dictionaries(settings, _yaml_secrets)
             log.info("Secrets loaded")
 
+    if 'strands' not in settings:
+        settings['strands'] = []
+
 
 def setting(name, default_if_blank=None):
     if name in settings:

@@ -12,7 +12,7 @@ from flask_mqtt import Mqtt
 from flask_debugtoolbar import DebugToolbarExtension
 # import flask_monitoringdashboard as dashboard (Uses SciPy, which is hard to install, so skipped for now)
 
-from functions import initialize_lighting
+from functions import initialize_lighting, setup_lights_from_configuration
 import config
 from socket import gaierror
 
@@ -114,4 +114,5 @@ def start_flask_app():
 if __name__ == '__main__':
     initialize_config_and_app()
     initialize_lighting()
+    setup_lights_from_configuration(config.settings['strands'])
     start_flask_app()

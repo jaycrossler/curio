@@ -7,8 +7,7 @@ mqtt_publish_topic: '/curio/basement/command'
 mqtt_publish_mode_topic: '/curio/basement/command/mode'
 
 strands:
-  1:
-    name: dots 2 inch
+  strand dots 2 inch:
     size: 20
     type: ws2811
     pin: 18
@@ -42,8 +41,7 @@ strands:
           combat: red pulsing
 
     id_ranges:
-      0:
-        group: Front engines
+      Front engines:
         ids: 1,2,3,4,5
         animations:
           default: yellow with random pulses
@@ -51,8 +49,7 @@ strands:
           stealth: off
           landing: orange with random pulses
           combat: orange pulsing
-      1:
-        group: Landing lights
+      Landing lights:
         ids: 6,7,9,10,11
         animations:
           default: red with slow blink
@@ -60,9 +57,8 @@ strands:
           stealth: off
           landing: red and white pulses
           combat: off
-      2:
-        group: Rear engine exhaust
-        ids: 13,14,15,16,17,18,19,20
+      Rear engine exhaust:
+        ids: 13,14,15,16,17,18,19
         animations:
           default: yellow with random pulses
           engage: blue pulsing
@@ -70,14 +66,12 @@ strands:
           landing: orange with random pulses
           combat: orange pulsing
 
-  2:
-    name: engine led strip
+  engine led strip:
     size: 150
     type: ws2811
     pin: 21
     id_ranges:
-      0:
-        group: Hyper Drive
+      Hyper Drive:
         id_start: 0
         id_end: 90
         animations:

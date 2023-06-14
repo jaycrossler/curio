@@ -11,6 +11,7 @@ __status__ = "Development"
 
 import platform
 import config
+from colour import Color as colour_color
 
 if platform.system() == 'Darwin':
     # This library doesn't import on Macintosh computers, ignore it and use a stub
@@ -153,6 +154,95 @@ def rainbow_cycle(strip, wait_ms=20, iterations=5):
 
             strip.show()
             time.sleep(wait_ms / 1000.0)
+
+
+def setup_lights_from_configuration(strands_config):
+    # Expects that light strips have been configured, then sets starting colors and animations
+    strand_id = 0
+    for strand_name in strands_config:
+        strand = config.light_strips[strand_id]
+        data = strands_config[strand_name]
+        ids_data = data['ids'] if 'ids' in data else []
+        id_ranges_data = data['id_ranges'] if 'id_ranges' in data else []
+
+        for id_range_data_name in id_ranges_data:
+            id_range_data = id_ranges_data[id_range_data_name]
+            ids = id_range_data['ids'] if 'ids' in id_range_data else ""
+            id_start = id_range_data['id_start'] if 'id_start' in id_range_data else ""
+            id_end = id_range_data['id_end'] if 'id_end' in id_range_data else ""
+            animations = id_range_data['animations'] if 'animations' in id_range_data else []
+            default_anim = animations['default'] if 'default' in animations else 'off'
+            parsed_anim = parse_animation_text(default_anim)
+            default_color = parsed_anim['color']
+
+            if len(ids) > 0:
+                id_list = ids.split(',')
+            else:
+                if 'id_start' in id_range_data and 'id_end' in id_range_data:
+                    id_list = range(int(id_start), int(id_end))
+                else:
+                    id_list = []
+
+            for pin in id_list:
+                led = int(pin)
+                if led < strand.numPixels():
+                    strand.setPixelColor(led, default_color)
+                else:
+                    config.log.warning('Tried to set LED from invalid config entry: strand {} {}'.format(id_range_data_name, led))
+
+        for id_data_led in ids_data:
+            id_data = ids_data[id_data_led]
+            animations = id_data['animations'] if 'animations' in id_data else []
+            default_anim = animations['default'] if 'default' in animations else 'off'
+            parsed_anim = parse_animation_text(default_anim)
+            default_color = parsed_anim['color']
+            strand.setPixelColor(int(id_data_led), default_color)
+
+        strand_id += 1
+
+
+def parse_animation_text(text):
+    # If "off" passed in, field is set to: False, catch that
+    loop = None
+    loop_modifier = None
+    loop_speed = None
+    special = None
+
+    if text and len(text) > 3:
+        text = text.lower()
+
+        words = text.split(" ")
+        color_name = words[0]
+
+        colour_rgb = colour_color(color_name)
+        color = Color(int(colour_rgb.red * 255), int(colour_rgb.green * 255), int(colour_rgb.blue * 255))
+
+        if 'puls' in text:
+            loop = 'pulse'
+        elif 'blink' in text:
+            loop = 'blink'
+        elif 'cycle' in text:
+            loop = 'cycle'
+        elif 'warp' in text:
+            loop = 'warp'
+
+        if 'rainbow' in text:
+            special = 'rainbow'
+
+        if 'random' in text:
+            loop_modifier = 'random'
+
+        if 'slow' in text:
+            loop_speed = 4
+        elif 'fast' in text:
+            loop_speed = 2
+        elif 'gentle' in text:
+            loop_speed = 6
+
+    else:
+        color = 0
+
+    return {'color': color, 'loop': loop, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed, 'special': special}
 
 
 # Not Used:
