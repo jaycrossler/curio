@@ -236,9 +236,34 @@ function setupIndexPage() {
         }
         ajaxRequest("/colors")
 
+        setTimeout(check_mqtt_status, 5000);
+
     } catch (e) {
         console.log(e)
     }
+}
+
+mqtt_status_connected = false;
+function check_mqtt_status() {
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/mqtt_status');
+
+    xhr.onload = function () {
+        // Check if we got 'true' as a response
+        mqtt_status_connected = (xhr.status == 200 && xhr.responseText == 'true');
+        // Set the color green or red based on result
+        document.getElementById('mqtt_status').style.color = (mqtt_status_connected ? 'green' : 'red')
+        // Call the timeout check again
+    };
+    try {
+        xhr.send();
+    } catch (e) {
+        console.log(e)
+        mqtt_status_connected = false;
+    }
+
+    setTimeout(check_mqtt_status, 5000);
 }
 
 function setupServicePage() {

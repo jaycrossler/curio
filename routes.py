@@ -182,6 +182,11 @@ def defaults_view():
     return msg + "<br/> " + get_colors()
 
 
+@app.route('/mqtt_status')
+def get_mqtt_status():
+    return 'true' if config.mqtt_working else 'false'
+
+
 @app.route('/colors')
 def get_colors():
     output = ""
