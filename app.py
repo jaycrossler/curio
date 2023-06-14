@@ -54,9 +54,9 @@ def initialize_config_and_app():
         mqtt_client = Mqtt(app)
 
     except ValueError:
-        config.log.warn('MQTT settings and secrets information was not entered, skipping MQTT')
-    except gaierror:
-        config.log.warn('MQTT could not connect - namespace lookup error')
+        config.log.warning('MQTT settings and secrets information was not entered, skipping MQTT')
+    except gaierror as e:
+        config.log.warning('MQTT could not connect - namespace lookup error: {}'.format(e))
 
     app.config['SECRET_KEY'] = config.setting('flask_secret_key', '1234')  # Enable flask session cookies
 

@@ -3,7 +3,7 @@
 """
 Curio LED Manager routes
 
-Sets up MQTT channels and app routes (to handle Flask page reuqests)
+Sets up MQTT channels and app routes (to handle Flask page requests)
 Puts long-running tasks into processes that can be tracked and killed
 
 """
@@ -15,6 +15,7 @@ from flask import render_template, request
 
 import config
 import os
+from colour import Color as Colour
 
 running_processes = []
 
@@ -24,24 +25,33 @@ def handle_mqtt_message(message):
         topic=message.topic,
         payload=message.payload.decode()
     )
-    # TODO: Have an array of all commands used throughout
-    config.log.info('Received MQTT message on topic: {topic} with payload: {payload}'.format(**data))
     payload = data['payload']
-    if payload == 'blue':
-        blue_view()
-    elif payload == 'red':
-        red_view()
-    elif payload == 'green':
-        green_view()
-    elif payload == 'rainbow':
-        rainbow_view()
-    elif payload == 'clear':
+    topics = data['topic'].split(config.setting('mqtt_listening_topic').replace('#', ''))
+    if len(topics) > 1:
+        topic = topics[1]
+    else:
+        topic = data['topic']
+
+    config.log.info('Received MQTT message on topic: {} with payload: {}'.format(topic, payload))
+
+    if payload == 'clear':
         off_view()
     elif payload.startswith('mode'):
         message = payload.split(":")
         if len(message) > 1:
             mode = message[1]
             action_mode(mode)
+    elif topic == "color" or topic == "":
+        rgb_array = payload.split(",")
+        if len(rgb_array) == 3:
+            if float(rgb_array[0]) > 1 or float(rgb_array[1]) > 1 or float(rgb_array[2]) > 1:
+                # Change to 0..1 not 0..255
+                payload = "{},{},{}".format(float(rgb_array[0])/255, float(rgb_array[1])/255, float(rgb_array[2])/255)
+            rgb_string(payload)
+        else:
+            rgb_color(payload)
+    else:
+        config.log.debug("Unrecognized topic route sent: {}".format(topic))
 
 
 # Web route pages
@@ -77,7 +87,6 @@ def rainbow_view():
     return msg
 
 
-# TODO: Have a generic color route
 @app.route("/blue", methods=["GET"])
 def blue_view():
     msg = "Color: Blue"
@@ -114,12 +123,69 @@ def rgb():
     return msg
 
 
+@app.route('/rgb/<string:rgb_text>')
+def rgb_string(rgb_text):
+    rgb_values = rgb_text.split(",")
+    if not len(rgb_values) == 3:
+        return "Invalid format entered, use something like: /rgb/255,100,50. Invalid: {}".format(rgb_text)
+
+    r = float(rgb_values[0])
+    g = float(rgb_values[1])
+    b = float(rgb_values[2])
+
+    if 0 <= r <= 1.0 and 0 <= g <= 1.0 and 0 <= b <= 1.0:
+        r = r * 255
+        g = g * 255
+        b = b * 255
+
+    r = int(r)
+    g = int(g)
+    b = int(b)
+    msg = "Color: RGB: ({}, {}, {}) from text({})".format(r, g, b, rgb_text)
+
+    start_new_animation(msg)
+    func_color(r, g, b)
+    return msg
+
+
+@app.route('/color/<string:color_text>')
+def rgb_color(color_text):
+    try:
+        rgb_values = Colour(color_text)
+        r = int(rgb_values.red * 255)
+        g = int(rgb_values.green * 255)
+        b = int(rgb_values.blue * 255)
+        msg = "Color: RGB: ({}, {}, {}) from text({})".format(r, g, b, color_text)
+
+        start_new_animation(msg)
+        func_color(r, g, b)
+    except ValueError:
+        msg = "Unrecognized Color: {}".format(color_text)
+    return msg
+
+
 @app.route("/all off", methods=["GET"])
 def off_view():
     msg = "Colors Off"
     start_new_animation(msg)
     func_clear()
     return msg
+
+
+@app.route('/colors')
+def get_colors():
+    output = ""
+    strip_num = 0
+    for strip in config.light_strips:
+        strip_num += 1
+        strip_html = ""
+        for led in range(strip.numPixels()):
+            pixel = strip.getPixelColor(led)
+            color = Colour(rgb=(pixel.r / 255.0, pixel.g / 255.0, pixel.b / 255.0))
+            hex_color = color.hex
+            strip_html += "<span style='color:{}'>⬤</span>".format(hex_color)
+        output += "<div>{}: {}</div>".format(strip_num, strip_html)
+    return output
 
 
 # ------------------
