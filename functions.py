@@ -190,7 +190,7 @@ def setup_lights_from_configuration(strands_config):
             for pin in id_list:
                 led = int(pin)
                 if led < strand.numPixels():
-                    picked_color = color_from_list_with_range(parsed_anim['color_list'], parsed_anim['loop_modifier'])
+                    picked_color = color_from_list_with_range(parsed_anim)
                     strand.setPixelColor(led, picked_color)
                     # config.log.info("- Strand {} - Pixel {} - color: {}".format(strand_name, led, default_color))
                 else:
@@ -202,7 +202,7 @@ def setup_lights_from_configuration(strands_config):
             default_anim = animations['default'] if 'default' in animations else 'off'
             parsed_anim = parse_animation_text(default_anim)
 
-            picked_color = color_from_list_with_range(parsed_anim['color_list'], parsed_anim['loop_modifier'])
+            picked_color = color_from_list_with_range(parsed_anim)
             strand.setPixelColor(int(id_data_led), picked_color)
 
         # config.log.info("- Strand {} - Pixels: {} - color: {}".format(strand_name, ids_data, default_color))
@@ -216,11 +216,12 @@ def parse_animation_text(text):
     loop_speed = None
     special = None
     color_list = []
+    variation_list = []  # Color random variations that go with each color
 
     # If "off" passed in, field is set to: False, catch that with an if statement
     if text and len(text) > 3:
         # Format is 'color word(s)', 'loop', 'modifier', 'speed', 'special'
-        # example: "yellow, pulsing, random" or "red and white, pulsing"
+        # example: "yellow, pulsing, random" or "red and white, pulsing" or "blue:.1"
         text = text.strip().lower()
 
         # Break by commas into named chunks
@@ -231,9 +232,16 @@ def parse_animation_text(text):
         colors_names = color_name.split(' and ')
         for color_name_split in colors_names:
             try:
-                colour_rgb = colour_color(color_name_split)
+                # parse out any : after color names for random variations, eg Blue:.1 or Pink:.2:0:.1
+                color_var_split = color_name_split.split(':')
+                variations = []
+                if len(color_var_split) > 1:
+                    variations = color_var_split[1:]
+
+                colour_rgb = colour_color(color_var_split[0])
                 color = Color(int(colour_rgb.red * 255), int(colour_rgb.green * 255), int(colour_rgb.blue * 255))
                 color_list.append(color)
+                variation_list.append(variations)
             except:
                 config.log.warning(
                     'Color "{}" not recognized from config.yaml strand animation settings'.format(color_name_split))
@@ -251,29 +259,45 @@ def parse_animation_text(text):
                 if text in ['slow', 'fast', 'gentle', '1', '2', '3', '4', '5', '6']:
                     loop_speed = text
 
-    return {'color_list': color_list, 'loop': loop, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed, 'special': special}
+    return {'color_list': color_list, 'color_variations': variation_list, 'special': special,
+            'loop': loop, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed }
 
 
-def color_from_list_with_range(color_list, modifier):
-    if modifier == 'random':
-        out_color = random.choice(color_list) if len(color_list) else 0
-        if out_color:
-            out_color = random_color_range(out_color, .1)
+def color_from_list_with_range(parsed_animation):
+    color_list = parsed_animation['color_list']
+    modifier_list = parsed_animation['color_variations']
+
+    if len(color_list):
+        color_number_to_use = random.choice(range(len(color_list)))
+        out_color = color_list[color_number_to_use]
+        out_modifier = modifier_list[color_number_to_use] if len(modifier_list) >= color_number_to_use else []
+
+        if len(out_modifier) > 0:
+            out_color = random_color_range(out_color, out_modifier)
     else:
-        out_color = random.choice(color_list) if len(color_list) else 0
+        out_color = 0
 
     return out_color
 
 
-def random_color_range(color, range_r, range_g=None, range_b=None):
-    # Start with a Color, then return another color close to it.
-    if isinstance(range_g, type(None)):
+def random_color_range(color, ranges):
+    # Start with a Color, then return another color close to it based on percentages in 'ranges'.
+    # example: "Color(120, 100, 100), [.1]" or "Color(120, 100, 100), [.2,0,.2]"
+    ranges = ranges or []
+    range_r = range_g = range_b = 0
+    if len(ranges) > 2:
+        range_b = ranges[2]
+    if len(ranges) > 1:
+        range_g = ranges[1]
+    if len(ranges) > 0:
+        range_r = ranges[0]
+    if len(ranges) == 1:
         range_g = range_r
-    if isinstance(range_b, type(None)):
         range_b = range_r
-    range_r = int(range_r * 255)
-    range_g = int(range_g * 255)
-    range_b = int(range_b * 255)
+
+    range_r = int(float(range_r) * 255)
+    range_g = int(float(range_g) * 255)
+    range_b = int(float(range_b) * 255)
 
     r = color.r
     g = color.g

@@ -35,7 +35,7 @@ strands:
         group: weapons
         animations:
           default: off
-          engage: blue, pulsing
+          engage: royalblue, pulsing
           stealth: off
           landing: off
           combat: red, pulsing
@@ -44,7 +44,7 @@ strands:
       Front engines:
         ids: 1,2,3,4,5
         animations:
-          default: yellow and orange, pulsing, random
+          default: yellow:.1 and orange:.2, pulsing, random
           engage: blue, pulsing
           stealth: off
           landing: orange, pulsing, random
@@ -52,7 +52,7 @@ strands:
       Landing lights:
         ids: 6,7,9,10,11
         animations:
-          default: red and pink, blinking, slow
+          default: pink:.1, blinking, slow
           engage: off
           stealth: off
           landing: red and white, pulsing
@@ -60,11 +60,11 @@ strands:
       Rear engine exhaust:
         ids: 13,14,15,16,17,18,19
         animations:
-          default: orange, pulsing, random
+          default: orange:1, pulsing, random
           engage: blue, pulsing
           stealth: off
           landing: orange, pulsing, random
-          combat: orange, pulsing
+          combat: red:.2, pulsing
 
   engine led strip:
     size: 150
@@ -75,7 +75,7 @@ strands:
         id_start: 0
         id_end: 90
         animations:
-          default: '#40e0d0, pulsing, random, gentle'
+          default: '#40e0d0:.1, pulsing, random, gentle'
           engage: blue, warp
           stealth: off
           landing: white, pulsing, gentle
