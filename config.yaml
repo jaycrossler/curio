@@ -17,54 +17,54 @@ strands:
         group: headlights
         animations:
           default: orange
-          engage: blue pulsing
+          engage: blue, pulsing
           stealth: off
           landing: yellow
-          combat: red pulsing
+          combat: red, pulsing
       8:
         name: Landing gear right
         group: landing gear
         animations:
           default: off
-          engage: blue pulsing
+          engage: blue, pulsing
           stealth: off
-          landing: yellow pulsing
+          landing: yellow, pulsing
           combat: off
       12:
         name: Upper gun barrel
         group: weapons
         animations:
           default: off
-          engage: blue pulsing
+          engage: blue, pulsing
           stealth: off
           landing: off
-          combat: red pulsing
+          combat: red, pulsing
 
     id_ranges:
       Front engines:
         ids: 1,2,3,4,5
         animations:
-          default: yellow with random pulses
-          engage: blue pulsing
+          default: yellow and orange, pulsing, random
+          engage: blue, pulsing
           stealth: off
-          landing: orange with random pulses
-          combat: orange pulsing
+          landing: orange, pulsing, random
+          combat: orange, pulsing
       Landing lights:
         ids: 6,7,9,10,11
         animations:
-          default: red with slow blink
+          default: red and pink, blinking, slow
           engage: off
           stealth: off
-          landing: red and white pulses
+          landing: red and white, pulsing
           combat: off
       Rear engine exhaust:
         ids: 13,14,15,16,17,18,19
         animations:
-          default: yellow with random pulses
-          engage: blue pulsing
+          default: orange, pulsing, random
+          engage: blue, pulsing
           stealth: off
-          landing: orange with random pulses
-          combat: orange pulsing
+          landing: orange, pulsing, random
+          combat: orange, pulsing
 
   engine led strip:
     size: 150
@@ -75,8 +75,8 @@ strands:
         id_start: 0
         id_end: 90
         animations:
-          default: blue gentle pulse
-          engage: blue warp
+          default: '#40e0d0, pulsing, random, gentle'
+          engage: blue, warp
           stealth: off
-          landing: white gentle pulse
-          combat: blue pulsing
+          landing: white, pulsing, gentle
+          combat: blue, pulsing

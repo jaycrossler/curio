@@ -52,14 +52,15 @@ def initialize_config_and_app():
 
         # MQTT handling
         mqtt_client = Mqtt(app)
-        config.mqtt_working = True
 
     except ValueError:
         config.log.warning('MQTT settings and secrets information was not entered, skipping MQTT')
         config.mqtt_working = False
+        config.mqtt_initialized = False
     except gaierror as e:
         config.log.warning('MQTT could not connect - namespace lookup error: {}'.format(e))
         config.mqtt_working = False
+        config.mqtt_initialized = False
 
     app.config['SECRET_KEY'] = config.setting('flask_secret_key', '1234')  # Enable flask session cookies
 
@@ -70,6 +71,7 @@ def initialize_config_and_app():
                 config.log.info('MQTT connected: client {} and data {} and flags {}'.format(client, userdata, flags))
                 mqtt_client.subscribe(config.setting('mqtt_listening_topic'))
                 config.mqtt_working = True
+                config.mqtt_initialized = True
             else:
                 config.log.error('Bad MQTT connection, code:', rc)
                 config.mqtt_working = False
@@ -88,15 +90,7 @@ def initialize_config_and_app():
                 config.log.error(buf)
         # End MQTT Handling
 
-        @mqtt_client.connect_callback()
-        def connected(client, userdata, flags, rc):
-            if rc == 0:
-                config.mqtt_working = True
-            else:
-                config.mqtt_working = False
-
-        @mqtt_client.on_connect_fail()
-        @mqtt_client.on_socket_close()
+        @mqtt_client.on_disconnect()
         def disconnected(client, userdata, flags, rc):
             config.mqtt_working = False
 

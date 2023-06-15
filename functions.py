@@ -11,6 +11,7 @@ __status__ = "Development"
 
 import platform
 import config
+import random
 from colour import Color as colour_color
 
 if platform.system() == 'Darwin':
@@ -177,7 +178,6 @@ def setup_lights_from_configuration(strands_config):
             animations = id_range_data['animations'] if 'animations' in id_range_data else []
             default_anim = animations['default'] if 'default' in animations else 'off'
             parsed_anim = parse_animation_text(default_anim)
-            default_color = parsed_anim['color']
 
             if len(ids) > 0:
                 id_list = ids.split(',')
@@ -190,7 +190,8 @@ def setup_lights_from_configuration(strands_config):
             for pin in id_list:
                 led = int(pin)
                 if led < strand.numPixels():
-                    strand.setPixelColor(led, default_color)
+                    picked_color = color_from_list_with_range(parsed_anim['color_list'], parsed_anim['loop_modifier'])
+                    strand.setPixelColor(led, picked_color)
                     # config.log.info("- Strand {} - Pixel {} - color: {}".format(strand_name, led, default_color))
                 else:
                     config.log.warning('Tried to set LED from invalid config entry: strand {} {}'.format(id_range_data_name, led))
@@ -200,8 +201,9 @@ def setup_lights_from_configuration(strands_config):
             animations = id_data['animations'] if 'animations' in id_data else []
             default_anim = animations['default'] if 'default' in animations else 'off'
             parsed_anim = parse_animation_text(default_anim)
-            default_color = parsed_anim['color']
-            strand.setPixelColor(int(id_data_led), default_color)
+
+            picked_color = color_from_list_with_range(parsed_anim['color_list'], parsed_anim['loop_modifier'])
+            strand.setPixelColor(int(id_data_led), picked_color)
 
         # config.log.info("- Strand {} - Pixels: {} - color: {}".format(strand_name, ids_data, default_color))
         strand_id += 1
@@ -209,48 +211,85 @@ def setup_lights_from_configuration(strands_config):
 
 
 def parse_animation_text(text):
-    # If "off" passed in, field is set to: False, catch that
     loop = None
     loop_modifier = None
     loop_speed = None
     special = None
+    color_list = []
 
+    # If "off" passed in, field is set to: False, catch that with an if statement
     if text and len(text) > 3:
-        text = text.lower()
+        # Format is 'color word(s)', 'loop', 'modifier', 'speed', 'special'
+        # example: "yellow, pulsing, random" or "red and white, pulsing"
+        text = text.strip().lower()
 
-        words = text.split(" ")
+        # Break by commas into named chunks
+        words = text.split(",")
         color_name = words[0]
 
-        colour_rgb = colour_color(color_name)
-        color = Color(int(colour_rgb.red * 255), int(colour_rgb.green * 255), int(colour_rgb.blue * 255))
+        # separate out multiple colors
+        colors_names = color_name.split(' and ')
+        for color_name_split in colors_names:
+            try:
+                colour_rgb = colour_color(color_name_split)
+                color = Color(int(colour_rgb.red * 255), int(colour_rgb.green * 255), int(colour_rgb.blue * 255))
+                color_list.append(color)
+            except:
+                config.log.warning(
+                    'Color "{}" not recognized from config.yaml strand animation settings'.format(color_name_split))
 
-        if 'puls' in text:
-            loop = 'pulse'
-        elif 'blink' in text:
-            loop = 'blink'
-        elif 'cycle' in text:
-            loop = 'cycle'
-        elif 'warp' in text:
-            loop = 'warp'
+        # See if an animation was entered
+        if len(words) > 1:
+            for word in words[1:]:
+                text = word.strip().lower()
+                if text in ['pulse', 'blink', 'cycle', 'warp']:
+                    loop = text
+                if text in ['rainbow']:
+                    special = text
+                if text in ['random', 'console']:
+                    loop_modifier = text
+                if text in ['slow', 'fast', 'gentle', '1', '2', '3', '4', '5', '6']:
+                    loop_speed = text
 
-        if 'rainbow' in text:
-            special = 'rainbow'
+    return {'color_list': color_list, 'loop': loop, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed, 'special': special}
 
-        if 'random' in text:
-            loop_modifier = 'random'
 
-        if 'slow' in text:
-            loop_speed = 4
-        elif 'fast' in text:
-            loop_speed = 2
-        elif 'gentle' in text:
-            loop_speed = 6
-
+def color_from_list_with_range(color_list, modifier):
+    if modifier == 'random':
+        out_color = random.choice(color_list) if len(color_list) else 0
+        if out_color:
+            out_color = random_color_range(out_color, .1)
     else:
-        color = 0
+        out_color = random.choice(color_list) if len(color_list) else 0
 
-    return {'color': color, 'loop': loop, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed, 'special': special}
+    return out_color
 
+
+def random_color_range(color, range_r, range_g=None, range_b=None):
+    # Start with a Color, then return another color close to it.
+    if isinstance(range_g, type(None)):
+        range_g = range_r
+    if isinstance(range_b, type(None)):
+        range_b = range_r
+    range_r = int(range_r * 255)
+    range_g = int(range_g * 255)
+    range_b = int(range_b * 255)
+
+    r = color.r
+    g = color.g
+    b = color.b
+
+    new_r = clamp(random.randint(r - range_r, r + range_r), 0, 255)
+    new_g = clamp(random.randint(g - range_g, g + range_g), 0, 255)
+    new_b = clamp(random.randint(b - range_b, b + range_b), 0, 255)
+
+    return Color(new_r, new_g, new_b)
+
+
+def clamp(val, minval, maxval):
+    if val < minval: return minval
+    if val > maxval: return maxval
+    return val
 
 # Not Used:
 def rainbow(strip, wait_ms=20, iterations=1):

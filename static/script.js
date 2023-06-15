@@ -236,14 +236,14 @@ function setupIndexPage() {
         }
         ajaxRequest("/colors")
 
-        setTimeout(check_mqtt_status, 5000);
+        setTimeout(check_mqtt_status, 1000);
 
     } catch (e) {
         console.log(e)
     }
 }
 
-mqtt_status_connected = false;
+mqtt_status_color = 'black';
 function check_mqtt_status() {
 
     const xhr = new XMLHttpRequest();
@@ -251,10 +251,15 @@ function check_mqtt_status() {
 
     xhr.onload = function () {
         // Check if we got 'true' as a response
-        mqtt_status_connected = (xhr.status == 200 && xhr.responseText == 'true');
-        // Set the color green or red based on result
-        document.getElementById('mqtt_status').style.color = (mqtt_status_connected ? 'green' : 'red')
-        // Call the timeout check again
+        if (xhr.status == 200) {
+            if (xhr.responseText == 'connected') {
+                mqtt_status_color = 'green';
+            } else if (xhr.responseText == 'disconnected') {
+                mqtt_status_color = 'red';
+            } else if (xhr.responseText == 'not initialized') {
+                mqtt_status_color = 'black';
+            }
+        }
     };
     try {
         xhr.send();
@@ -263,7 +268,15 @@ function check_mqtt_status() {
         mqtt_status_connected = false;
     }
 
-    setTimeout(check_mqtt_status, 5000);
+    //If it's 'not initialized', stop checking
+    document.getElementById('mqtt_status').style.color = mqtt_status_color;
+    if (mqtt_status_color!='black'){
+        // Set the color green or red based on result
+        document.getElementById('mqtt_status').title = 'MQTT Connection Status';
+        setTimeout(check_mqtt_status, 10000);
+    } else {
+        document.getElementById('mqtt_status').title = 'MQTT Connection Never Initialized';
+    }
 }
 
 function setupServicePage() {

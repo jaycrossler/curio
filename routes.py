@@ -184,12 +184,15 @@ def defaults_view():
 
 @app.route('/mqtt_status')
 def get_mqtt_status():
-    return 'true' if config.mqtt_working else 'false'
+    msg = 'not initialized'
+    if config.mqtt_initialized:
+        msg = 'connected' if config.mqtt_working else 'disconnected'
+    return msg
 
 
 @app.route('/colors')
 def get_colors():
-    output = ""
+    output = "<br/>"
     strip_num = 0
     for strip in config.light_strips:
         strip_num += 1
@@ -198,7 +201,7 @@ def get_colors():
             pixel = strip.getPixelColorRGB(led)
             color = Colour(rgb=(pixel.r / 255.0, pixel.g / 255.0, pixel.b / 255.0))
             hex_color = color.hex
-            strip_html += "<span style='color:{}'>⬤</span>".format(hex_color)
+            strip_html += "<span style='color:{}' title='Strip {}, LED {}'>⬤</span>".format(hex_color, strip_num, led)
             if led % 40 == 39:
                 strip_html += " "  # Add a space every 40 lights
         output += "<div>{}:{}</div>".format(strip_num, strip_html)

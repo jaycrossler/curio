@@ -4,6 +4,7 @@ from yaml import safe_load
 
 light_strips = []
 settings = {}
+mqtt_initialized = False
 mqtt_working = False
 log = logger.get_logger('App')
 
