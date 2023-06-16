@@ -125,5 +125,5 @@ def start_flask_app():
 if __name__ == '__main__':
     initialize_config_and_app()
     initialize_lighting()
-    setup_lights_from_configuration(config.settings['strands'])
+    config.light_data = setup_lights_from_configuration()
     start_flask_app()

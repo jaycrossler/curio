@@ -41,11 +41,18 @@
     </div>
 </nav>
 <div class="container">
-    <div class="col">
-        <div class="row">
+    <div class="row">
+        <div class="col">
             <header class="btn btn-block border-light badge-pill" id="status" type="header"><p> {{status}} </p>
             </header>
         </div>
+        <div class="col">
+            <span class="btn btn-block border-light" style="padding:9px">Animation:
+            <select class="dropdownModeButton btn btn-secondary">
+              <option> default </option>
+            </select>
+            </span>
+      </div>
     </div>
     <div class="row">
         <div class="col">
@@ -61,12 +68,7 @@
             </button>
         </div>
     </div>
-    <div class="row">
-        <div class="col">
-            <button class="btn btn-block border-danger btn-outline-secondary" id="defaultsBtn" type="button">
-            </button>
-        </div>
-    </div>
+
     <div class="row" id="led_results">
     </div>
     <div class="row"></div>

@@ -157,10 +157,12 @@ def rainbow_cycle(strip, wait_ms=20, iterations=5):
             time.sleep(wait_ms / 1000.0)
 
 
-def setup_lights_from_configuration(strands_config):
+def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
     # Expects that light strips have been configured, then sets starting colors and animations
     if not strands_config:
         strands_config = config.settings['strands']
+    light_data = []
+    mode_list = []
     
     strand_id = 0
     for strand_name in strands_config:
@@ -170,14 +172,21 @@ def setup_lights_from_configuration(strands_config):
         ids_data = data['ids'] if 'ids' in data else []
         id_ranges_data = data['id_ranges'] if 'id_ranges' in data else []
 
+        led_database = []
+        for i in range(strand.numPixels()):
+            led_database.append({})
+
         for id_range_data_name in id_ranges_data:
             id_range_data = id_ranges_data[id_range_data_name]
             ids = id_range_data['ids'] if 'ids' in id_range_data else ""
             id_start = id_range_data['id_start'] if 'id_start' in id_range_data else ""
             id_end = id_range_data['id_end'] if 'id_end' in id_range_data else ""
             animations = id_range_data['animations'] if 'animations' in id_range_data else []
-            default_anim = animations['default'] if 'default' in animations else 'off'
+            default_anim = animations[config.current_mode] if config.current_mode in animations else 'off'
             parsed_anim = parse_animation_text(default_anim)
+
+            for anim in animations:
+                if anim not in mode_list: mode_list.append(anim)
 
             if len(ids) > 0:
                 id_list = ids.split(',')
@@ -187,27 +196,44 @@ def setup_lights_from_configuration(strands_config):
                 else:
                     id_list = []
 
-            for pin in id_list:
-                led = int(pin)
+            for led_num in id_list:
+                led = int(led_num)
                 if led < strand.numPixels():
                     picked_color = color_from_list_with_range(parsed_anim)
-                    strand.setPixelColor(led, picked_color)
+                    if set_lights_on:
+                        strand.setPixelColor(led, picked_color)
+                    led_database[led] = {
+                        'id': led, 'color': picked_color, 'name': id_range_data_name, 'anim_text': default_anim
+                    }
                     # config.log.info("- Strand {} - Pixel {} - color: {}".format(strand_name, led, default_color))
                 else:
-                    config.log.warning('Tried to set LED from invalid config entry: strand {} {}'.format(id_range_data_name, led))
+                    config.log.warning('Invalid led animation config: strand {} {}'.format(id_range_data_name, led))
 
         for id_data_led in ids_data:
             id_data = ids_data[id_data_led]
             animations = id_data['animations'] if 'animations' in id_data else []
-            default_anim = animations['default'] if 'default' in animations else 'off'
+            default_anim = animations[config.current_mode] if config.current_mode in animations else 'off'
+            id_name = id_data['name'] if 'name' in id_data else ''
             parsed_anim = parse_animation_text(default_anim)
 
             picked_color = color_from_list_with_range(parsed_anim)
-            strand.setPixelColor(int(id_data_led), picked_color)
+            if set_lights_on:
+                strand.setPixelColor(int(id_data_led), picked_color)
+            led_database[id_data_led] = {
+                'id': id_data_led, 'color': picked_color, 'name': id_name, 'anim_text': default_anim
+            }
+
+            for anim in animations:
+                if anim not in mode_list: mode_list.append(anim)
 
         # config.log.info("- Strand {} - Pixels: {} - color: {}".format(strand_name, ids_data, default_color))
         strand_id += 1
-        strand.show()
+        if set_lights_on:
+            strand.show()
+        light_data.append(led_database)
+
+        config.animation_modes = mode_list
+    return light_data
 
 
 def parse_animation_text(text):

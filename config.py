@@ -2,7 +2,11 @@ import os
 import logger
 from yaml import safe_load
 
+# Configuration Variables that are accessed by other scripts
 light_strips = []
+light_data = []
+animation_modes = []
+current_mode = 'default'
 settings = {}
 mqtt_initialized = False
 mqtt_working = False

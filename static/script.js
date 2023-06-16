@@ -3,8 +3,7 @@ const indexLabels = {
 //    'blueBtn': 'blue',
 //    'greenBtn': 'green',
     'rainbowBtn': 'rainbow',
-    'stopBtn': 'all off',
-    'defaultsBtn': 'default animation'
+    'stopBtn': 'all off'
 };
 const serviceLabels = {
     'homeBtn': 'home',
@@ -17,8 +16,7 @@ const requestIndexFunctions = {
 //    'blueBtn': '/blue',
 //    'greenBtn': '/green',
     'rainbowBtn': '/rainbow',
-    'stopBtn': '/all off',
-    'defaultsBtn': '/defaults'
+    'stopBtn': '/all off'
 };
 
 // Generated from:
@@ -168,6 +166,8 @@ const color_list = [
   ['White', '255', '255', '255', '#fff'],
 ]
 // noinspection JSUnusedGlobalSymbols
+var animation_modes = [];
+
 function ajaxRequest(url) {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url);
@@ -234,9 +234,15 @@ function setupIndexPage() {
         } catch (e) {
             console.log(e)
         }
-        ajaxRequest("/colors")
 
-        setTimeout(check_mqtt_status, 1000);
+        setTimeout(check_state, 1000);
+
+        $( ".dropdownModeButton" ).change(function() {
+            //Send Ajx change
+            var selected = this.options[this.selectedIndex].value;
+            ajaxRequest('/mode/' + selected);
+//            alert( selected );
+    });
 
     } catch (e) {
         console.log(e)
@@ -244,21 +250,42 @@ function setupIndexPage() {
 }
 
 mqtt_status_color = 'black';
-function check_mqtt_status() {
+function check_state() {
+// Pulls in a JSON object on the state of the pi and lights
 
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', '/mqtt_status');
+    xhr.open('GET', '/state');
 
     xhr.onload = function () {
         // Check if we got 'true' as a response
         if (xhr.status == 200) {
-            if (xhr.responseText == 'connected') {
+            state = JSON.parse(xhr.responseText)
+
+            // Set MQTT light state
+            if (state.mqtt_status == 'connected') {
                 mqtt_status_color = 'green';
-            } else if (xhr.responseText == 'disconnected') {
+            } else if (state.mqtt_status == 'disconnected') {
                 mqtt_status_color = 'red';
-            } else if (xhr.responseText == 'not initialized') {
+            } else if (state.mqtt_status == 'not initialized') {
                 mqtt_status_color = 'black';
             }
+
+            var anim_modes_from_xhr = state.modes;
+            if (animation_modes.length != anim_modes_from_xhr.length) {
+                animation_modes = anim_modes_from_xhr;
+                //Likely the list of modes changed, rebuild the drop down
+                var $picker = $('.dropdownModeButton');
+                $picker.empty(); //children().remove();
+                for (mode in anim_modes_from_xhr) {
+                    mode_name = anim_modes_from_xhr[mode]
+                    $picker.append(
+                        $('<option/>')
+                            .attr('value', mode_name).text(mode_name));
+                }
+
+            }
+
+            set_light_status(state.strands);
         }
     };
     try {
@@ -270,12 +297,48 @@ function check_mqtt_status() {
 
     //If it's 'not initialized', stop checking
     document.getElementById('mqtt_status').style.color = mqtt_status_color;
-    if (mqtt_status_color!='black'){
-        // Set the color green or red based on result
-        document.getElementById('mqtt_status').title = 'MQTT Connection Status';
-        setTimeout(check_mqtt_status, 10000);
-    } else {
+    if (mqtt_status_color=='black'){
         document.getElementById('mqtt_status').title = 'MQTT Connection Never Initialized';
+    } else if (mqtt_status_color=='green') {
+        document.getElementById('mqtt_status').title = 'MQTT Connected and listening';
+    } else if (mqtt_status_color=='red') {
+        document.getElementById('mqtt_status').title = 'MQTT Disconnected';
+    }
+    setTimeout(check_state, 5000);
+}
+
+function clearBox(div) {
+    while(div.firstChild) {
+        div.removeChild(div.firstChild);
+    }
+}
+function set_light_status(strands) {
+    var holder = document.getElementById('led_results');
+    clearBox(holder);
+
+    for (strand_id in strands) {
+        var strand = strands[strand_id];
+        var strand_div = document.createElement('div')
+        strand_div.innerHTML = strand_id;
+        strand_div.title = "Strand: " + strand.strand_name + ", pin: " + strand.strand_info.pin;
+        strand_div.style.padding = "6px";
+
+        for (led_id in strand.led_info) {
+            var led_data = strand.led_info[led_id];
+            var led_span = document.createElement('span')
+            led_span.innerHTML = '⬤';
+            led_span.style.color = led_data.color;
+            led_span.title = '[' + led_id + '], Name: ' + led_data.name + ', Current Color: [' + led_data.color + '], Animation Text: ' + led_data.animation_text;
+
+            strand_div.appendChild(led_span);
+
+            if (parseInt(led_id) % 30 == 29) {
+                var led_span = document.createElement('span')
+                led_span.innerHTML = ' ';
+                strand_div.appendChild(led_span);
+            }
+        }
+        holder.appendChild(strand_div);
     }
 }
 

@@ -56,14 +56,14 @@ strands:
           engage: off
           stealth: off
           landing: red and white, pulsing
-          combat: off
+          combat: lightblue:.1
       Rear engine exhaust:
         ids: 13,14,15,16,17,18,19
         animations:
           default: orange:1, pulsing, random
           engage: blue, pulsing
           stealth: off
-          landing: orange, pulsing, random
+          landing: orange:.3, pulsing, random
           combat: red:.2, pulsing
 
   engine led strip:
@@ -76,7 +76,7 @@ strands:
         id_end: 90
         animations:
           default: '#40e0d0:.1, pulsing, random, gentle'
-          engage: blue, warp
-          stealth: off
-          landing: white, pulsing, gentle
-          combat: blue, pulsing
+          engage: #40e0d0:.3, warp
+          stealth: gray:.1
+          landing: teal:.2, pulsing, gentle
+          combat: red:.3, pulsing

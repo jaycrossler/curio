@@ -7,7 +7,7 @@ Sets up MQTT channels and app routes (to handle Flask page requests)
 Puts long-running tasks into processes that can be tracked and killed
 
 """
-
+import json
 from __main__ import app, mqtt_client
 from functions import func_rainbow, func_color, func_clear, get_status, setup_lights_from_configuration
 from multiprocessing import Process
@@ -72,8 +72,10 @@ def service():
 @app.route("/mode/<string:mode>/", methods=["GET"])
 def action_mode(mode):
     config.log.info("Action Mode set to {}".format(mode))
+    config.current_mode = mode
     if mqtt_client:
         mqtt_client.publish(config.setting('mqtt_publish_mode_topic'), mode)
+    setup_lights_from_configuration()
     return "Trying to run action mode {}".format(mode)
 
 
@@ -85,30 +87,6 @@ def rainbow_view():
     start_new_animation(msg)
     for light_strip in config.light_strips:
         start_process(func_rainbow, msg, light_strip)
-    return msg + "<br/> " + get_colors()
-
-
-@app.route("/blue", methods=["GET"])
-def blue_view():
-    msg = "Color: Blue"
-    start_new_animation(msg)
-    func_color(0, 0, 255)
-    return msg + "<br/> " + get_colors()
-
-
-@app.route("/red", methods=["GET"])
-def red_view():
-    msg = "Color: Red"
-    start_new_animation(msg)
-    func_color(255, 0, 0)
-    return msg + "<br/> " + get_colors()
-
-
-@app.route("/green", methods=["GET"])
-def green_view():
-    msg = "Color: Green"
-    start_new_animation(msg)
-    func_color(0, 255, 0)
     return msg + "<br/> " + get_colors()
 
 
@@ -176,9 +154,10 @@ def off_view():
 @app.route("/defaults", methods=["GET"])
 def defaults_view():
     msg = "Default Animation"
+    config.current_mode = 'default'
     start_new_animation(msg)
     func_clear()
-    setup_lights_from_configuration(None)
+    config.light_data = setup_lights_from_configuration(None)
     return msg + "<br/> " + get_colors()
 
 
@@ -190,7 +169,21 @@ def get_mqtt_status():
     return msg
 
 
-@app.route('/colors')
+@app.route('/state')
+def get_state():
+    # TODO: Add CPU stats, current_mode, details on each light, etc
+    state_obj = {
+        'mqtt_status': get_mqtt_status(),
+        'animations_running': len(running_processes),
+        'strands': get_strands_as_json(),
+        'mode': config.current_mode,
+        'modes': config.animation_modes
+    }
+
+    return json.dumps(state_obj)
+
+
+@app.route('/colors_as_html')
 def get_colors():
     output = "<br/>"
     strip_num = 0
@@ -206,6 +199,31 @@ def get_colors():
                 strip_html += " "  # Add a space every 40 lights
         output += "<div>{}:{}</div>".format(strip_num, strip_html)
     return output
+
+
+def get_strands_as_json():
+    output_obj = []
+    strip_num = 0
+    for strand_name in config.settings['strands']:
+        strand_info = config.settings['strands'][strand_name]
+        strip = config.light_strips[strip_num]
+        info = {'strand_name': strand_name, 'strand_info': strand_info}
+        led_info = []
+
+        for led in range(strip.numPixels()):
+            pixel = strip.getPixelColorRGB(led)
+            color = Colour(rgb=(pixel.r / 255.0, pixel.g / 255.0, pixel.b / 255.0))
+            hex_color = color.hex
+            led_database_info = config.light_data[strip_num][led]
+            led_group_name = led_database_info['name'] if 'name' in led_database_info else '<not set>'
+            animation_text = led_database_info['anim_text'] if 'anim_text' in led_database_info else '<not set>'
+            led_info.append({'color': hex_color, 'name': led_group_name, 'animation_text': animation_text})
+
+        info['led_info'] = led_info
+        output_obj.append(info)
+        strip_num += 1
+
+    return output_obj
 
 
 # ------------------
