@@ -10,7 +10,6 @@ and from within the process.
 
 # TODOs:
 - TODO: Rebuild simpler standard settings interface
-- TODO: Have "groups" of lights that will work across multiple strings and configs
 - TODO: Have a web page that modifies light groups, then assigns states and animations to them
 - TODO: Have an audio manager to also have sounds
 - TODO: Build Alexa driver

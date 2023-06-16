@@ -280,7 +280,7 @@ function check_state() {
                     mode_name = anim_modes_from_xhr[mode]
                     $picker.append(
                         $('<option/>')
-                            .attr('value', mode_name).text(mode_name));
+                            .attr('value', mode_name).text(toTitleCase(mode_name)));
                 }
 
             }
@@ -305,6 +305,12 @@ function check_state() {
         document.getElementById('mqtt_status').title = 'MQTT Disconnected';
     }
     setTimeout(check_state, 5000);
+}
+
+function toTitleCase(str) {
+    return str.replace(/(?:^|\s)\w/g, function(match) {
+        return match.toUpperCase();
+    });
 }
 
 function clearBox(div) {
