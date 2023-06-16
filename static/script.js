@@ -1,23 +1,4 @@
-const indexLabels = {
-//    'redBtn': 'red',
-//    'blueBtn': 'blue',
-//    'greenBtn': 'green',
-    'rainbowBtn': 'rainbow',
-    'stopBtn': 'all off'
-};
-const serviceLabels = {
-    'homeBtn': 'home',
-    'rebootBtn': 'reboot device',
-    'dashboardBtn': 'monitoring dashboard'
-};
-
-const requestIndexFunctions = {
-//    'redBtn': '/red',
-//    'blueBtn': '/blue',
-//    'greenBtn': '/green',
-    'rainbowBtn': '/rainbow',
-    'stopBtn': '/all off'
-};
+var status_check_timer;
 
 // Generated from:
 // for c in colour.RGB_TO_COLOR_NAMES:
@@ -178,13 +159,16 @@ function ajaxRequest(url) {
             console.log('Request failed.  Returned status of: ' + xhr.status);
         } else {
             //console.log('Response Text: ' + xhr.responseText);
-            document.getElementById('led_results').innerHTML = xhr.responseText;
+            document.getElementById("status").innerHTML = "URL: '" + url + "'<br/>Status: " + xhr.response;
+//            document.getElementById('led_results').innerHTML = xhr.responseText;
+            clearTimeout(status_check_timer);
+            check_state()
         }
     };
     try {
         xhr.send();
         console.log('function status: ' + url.slice(1).toUpperCase());
-        document.getElementById("status").innerHTML = url.slice(1).toUpperCase();
+        document.getElementById("status").innerHTML = "URL: '" + url + "'";
     } catch (e) {
         console.log(e)
     }
@@ -204,7 +188,9 @@ function add_color_clickers() {
         colSpan.innerHTML = '⬤';
         colSpan.title = 'Set all leds to: ' + color_name
         colSpan.style.backgroundColor = color[4];
-        colSpan.style.padding = "6px";
+        colSpan.style.padding = ".5em";
+        colSpan.style.display = "inline-block";
+
         colSpan.style.cursor = "pointer";
         colSpan.colors = {name:color_name, r: color[1], g: color[2], b: color[3]}
         colSpan.onclick = function(e) {
@@ -217,31 +203,15 @@ function add_color_clickers() {
 
 function setupIndexPage() {
     try {
-        //document.getElementById('serviceBtn').setAttribute('onclick', "goto('/service',)");
+        $('#rainbowBtn').on('click', function(){ajaxRequest('/rainbow')})
+        $('#stopBtn').on('click', function(){ajaxRequest('/all off')})
 
         add_color_clickers()
-        try {
-            for (const id in requestIndexFunctions) {
-                document.getElementById(id).setAttribute('onclick', "ajaxRequest(requestIndexFunctions[id], this)");
-            }
-        } catch (e) {
-            console.log(e)
-        }
-        try {
-            for (const id in indexLabels) {
-                document.getElementById(id).innerHTML = indexLabels[id].toUpperCase();
-            }
-        } catch (e) {
-            console.log(e)
-        }
-
-        setTimeout(check_state, 1000);
+        status_check_timer = setTimeout(check_state, 1000);
 
         $( ".dropdownModeButton" ).change(function() {
-            //Send Ajx change
             var selected = this.options[this.selectedIndex].value;
             ajaxRequest('/mode/' + selected);
-//            alert( selected );
     });
 
     } catch (e) {
@@ -304,7 +274,7 @@ function check_state() {
     } else if (mqtt_status_color=='red') {
         document.getElementById('mqtt_status').title = 'MQTT Disconnected';
     }
-    setTimeout(check_state, 5000);
+    status_check_timer = setTimeout(check_state, 5000);
 }
 
 function toTitleCase(str) {

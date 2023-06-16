@@ -76,7 +76,7 @@ def action_mode(mode):
     if mqtt_client:
         mqtt_client.publish(config.setting('mqtt_publish_mode_topic'), mode)
     setup_lights_from_configuration()
-    return "Trying to run action mode {}".format(mode)
+    return "Starting action mode '{}'".format(mode)
 
 
 # ----------------------------
@@ -87,7 +87,7 @@ def rainbow_view():
     start_new_animation(msg)
     for light_strip in config.light_strips:
         start_process(func_rainbow, msg, light_strip)
-    return msg + "<br/> " + get_colors()
+    return msg
 
 
 @app.route('/rgb', methods=['POST'])
@@ -95,11 +95,11 @@ def rgb():
     r = int(request.form['red'])
     g = int(request.form['green'])
     b = int(request.form['blue'])
-    msg = "Color: RGB: ({}, {}, {})".format(r, g, b)
+    msg = "Set all to RGB: ({}, {}, {})".format(r, g, b)
 
     start_new_animation(msg)
     func_color(r, g, b)
-    return msg + "<br/> " + get_colors()
+    return msg
 
 
 @app.route('/rgb/<string:rgb_text>')
@@ -120,35 +120,36 @@ def rgb_string(rgb_text):
     r = int(r)
     g = int(g)
     b = int(b)
-    msg = "Color: RGB: ({}, {}, {}) from text({})".format(r, g, b, rgb_text)
+    msg = "Set all to RGB: ({}, {}, {}) from '{}'".format(r, g, b, rgb_text)
 
     start_new_animation(msg)
     func_color(r, g, b)
-    return msg + "<br/> " + get_colors()
+    return msg
 
 
 @app.route('/color/<string:color_text>')
 def rgb_color(color_text):
     try:
+        # TODO: Add in variation parsing
         rgb_values = Colour(color_text)
         r = int(rgb_values.red * 255)
         g = int(rgb_values.green * 255)
         b = int(rgb_values.blue * 255)
-        msg = "Color: RGB: ({}, {}, {}) from text({})".format(r, g, b, color_text)
+        msg = "Set all to RGB: ({}, {}, {}) from '{}'".format(r, g, b, color_text)
 
         start_new_animation(msg)
         func_color(r, g, b)
     except ValueError:
         msg = "Unrecognized Color: {}".format(color_text)
-    return msg + "<br/>" + get_colors()
+    return msg
 
 
 @app.route("/all off", methods=["GET"])
 def off_view():
-    msg = "Colors Off"
+    msg = "Set all lights to off"
     start_new_animation(msg)
     func_clear()
-    return msg + "<br/> " + get_colors()
+    return msg
 
 
 @app.route("/defaults", methods=["GET"])
@@ -158,7 +159,7 @@ def defaults_view():
     start_new_animation(msg)
     func_clear()
     config.light_data = setup_lights_from_configuration(None)
-    return msg + "<br/> " + get_colors()
+    return msg
 
 
 @app.route('/mqtt_status')

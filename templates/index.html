@@ -4,54 +4,89 @@
     <title>Curio</title>
     <script type="text/javascript">window.name='index'</script>
     <meta content="width=device-width, initial-scale=1" name="viewport">
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link href="../static/bootstrap/bootstrap.css" rel="stylesheet">
+    <script src="../static/bootstrap/bootstrap.bundle.min.js"></script>
+
+    <script src="../static/jquery.min.js"></script>
     <script src="../static/script.js"></script>
     <link href="../static/style.css" rel="stylesheet">
+<!--    <link href="../static/SourceCode.woff2" rel="stylesheet">-->
+<!--    <link href="../static/Orbitron.woff2" rel="stylesheet">-->
     <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:600|Teko:500" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Orbitron:400,700" rel="stylesheet">
  </head>
 
 <body>
 <nav class="navbar navbar-expand-sm bg-dark navbar-dark d-flex justify-content-between">
-    <div class="p-2"><a class="navbar-brand" href="mailto:jay.crossler@gmail.com?subject=Curio RaspberryPi LED control">&copy;
+    <div class="p-2"><a class="navbar-brand" href="https://github.com/jaycrossler/curio">&copy;
         Curio </a></div>
     <div class="p-2"><a class=nav-link href="https://github.com/jaycrossler/curio" id="subtitle" target="_blank">Control
         Raspberry Pi lights with your Browser<span id="mqtt_status">&nbsp;(·)</span></a>
     </div>
 </nav>
+
 <div class="container">
-    <div class="row">
-        <div class="col">
-            <header class="btn btn-block border-light badge-pill" id="status" type="header"><p> {{status}} </p>
-            </header>
+
+    <div class="accordion" id="accordionExample">
+
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+            Animation Modes
+          </button>
+        </h2>
+        <div id="collapseTwo" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+          <div class="accordion-body">
+
+              <select class="dropdownModeButton btn btn-secondary">
+                  <option>Default</option>
+              </select>
+          </div>
+
         </div>
-        <div class="col">
-            <span class="btn btn-block border-light" style="padding:9px">Animation:
-            <select class="dropdownModeButton btn btn-secondary">
-              <option>Default</option>
-            </select>
-            </span>
+      </div>
+
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+            Set All Lights to a Color
+          </button>
+        </h2>
+        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+          <div class="accordion-body">
+
+              <div id="color_picker" style="word-wrap: break-word;"></div>
+              <button class="btn btn-block btn-outline-danger" id="rainbowBtn" type="button">Rainbow</button>
+              <button class="btn btn-block btn-outline-secondary" id="stopBtn" type="button">Clear All</button>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+            Build an animation
+          </button>
+        </h2>
+        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+          <div class="accordion-body">
+            <strong>This is the third item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+          </div>
+        </div>
       </div>
     </div>
-    <div class="row">
-        <div class="col">
-            <button class="btn btn-block btn-outline-danger" id="rainbowBtn" type="button">
-            </button>
-        </div>
-    </div>
-    <div class="row" id="color_picker"></div>
 
-    <div class="row">
-        <div class="col">
-            <button class="btn btn-block btn-outline-secondary" id="stopBtn" type="button">
-            </button>
-        </div>
+    <hr/>
+
+    <div class="card">
+      <h5 class="card-header">Current Light Strip Status</h5>
+      <div class="card-body">
+        <h5 class="card-title" id="status">Status: Default Animation Mode</h5>
+        <p class="card-text" id="led_results">LEDs</p>
+      </div>
     </div>
 
-    <div class="row" id="led_results">
-    </div>
-    <div class="row"></div>
 </div>
 </body>
 </html>
