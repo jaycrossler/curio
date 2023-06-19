@@ -31,10 +31,6 @@ LED_CHANNEL = 0       # set to '1' for GPIOs 13, 19, 41, 45 or 53
 status = 'None'
 stop_flag = False
 
-# TODO: Remove texts
-rainbow_text = "rainbow"
-off = "all off"
-
 
 def initialize_lighting():
 
@@ -53,7 +49,7 @@ def initialize_lighting():
 def get_status():
     global status
     if status is None:
-        status = off
+        status = "Lights are off"
     return status
 
 
@@ -72,30 +68,33 @@ def func_color(r, g, b):
     return
 
 
-def func_rainbow(light_strip):
-    set_status(rainbow_text)
-    run_rainbow(light_strip)
+def func_rainbow(light_strip_data):
+    set_status("Rainbow")
+    run_rainbow(light_strip_data.get('strip'), light_strip_data.get('id_list'))
     return
 
 
 def func_clear():
     global stop_flag
     stop_flag = True
-    set_status(off)
+    set_status("Clearing all lights")
     for light_strip in config.light_strips:
         clear(light_strip)
     return
 
 
-def run_rainbow(light_strip):
+def run_rainbow(light_strip, id_list=None):
     """Vary the colors in a rainbow pattern, slightly changing brightness, and
     quit if stop_flag set."""
+    if id_list is None:
+        id_list = []
+
     global stop_flag
     stop_flag = False
 
     config.log.info("Starting rainbow animation on strip with {} leds".format(light_strip.numPixels()))
 
-    rainbow_cycle(light_strip)
+    rainbow_cycle(light_strip, id_list=id_list)
 
     reset_strip(light_strip)
     return
@@ -137,18 +136,23 @@ def wheel(pos):
         return Color(0, pos * 3, 255 - pos * 3)
 
 
-def rainbow_cycle(strip, wait_ms=20, iterations=5):
-    """Draw rainbow that uniformly distributes itself across all pixels."""
+def rainbow_cycle(strip, wait_ms=20, iterations=5, id_list=None):
+    """Draw rainbow that uniformly distributes itself across all pixels (or all pixels in id_list)."""
+    # TODO: Remove iterations variable
+
     global stop_flag
+
+    pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
 
     for j in range(256 * iterations):
         if stop_flag:
             break
-        for i in range(strip.numPixels()):
+        for i in range(pixels_to_loop_on):
             if stop_flag:
                 break
             try:
-                strip.setPixelColor(i, wheel((int(i * 256 / strip.numPixels()) + j) & 255))
+                pixel_to_set = id_list[i] if id_list else i
+                strip.setPixelColor(pixel_to_set, wheel((int(i * 256 / pixels_to_loop_on) + j) & 255))
             except IndexError:
                 config.log.warn("IndexError using {} when numPixels is {} and"
                                 " length of leds is {}".format(i, strip.numPixels(), len(strip.leds)))
@@ -157,44 +161,66 @@ def rainbow_cycle(strip, wait_ms=20, iterations=5):
             time.sleep(wait_ms / 1000.0)
 
 
+def find_ids(ids=None, id_start=None, id_end=None, limit_to=None):
+    if ids and len(ids) > 0:
+        id_list = ids.split(',')
+    else:
+        if type(id_start) is str and len(id_start):
+            id_start = int(id_start)
+        if type(id_end) is str and len(id_end):
+            id_end = int(id_end)
+
+        if type(id_start) is int and type(id_end) is int:
+            id_list = range(id_start, id_end)
+        else:
+            id_list = []
+
+    id_list = [int(i) for i in id_list]
+
+    if limit_to:
+        for id_num in id_list:
+            if int(id_num) > limit_to:
+                id_list.remove(id_num)
+
+    return id_list
+
+
 def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
     # Expects that light strips have been configured, then sets starting colors and animations
     if not strands_config:
-        strands_config = config.settings['strands']
+        strands_config = config.settings.get('strands')
     light_data = []
+    light_color_data = []
     mode_list = []
     
     strand_id = 0
     for strand_name in strands_config:
         config.log.info("Setting up default lights for strand - {}".format(strand_name))
         strand = config.light_strips[strand_id]
-        data = strands_config[strand_name]
-        ids_data = data['ids'] if 'ids' in data else []
-        id_ranges_data = data['id_ranges'] if 'id_ranges' in data else []
+        data = strands_config.get(strand_name)
+        ids_data = data.get('ids', [])
+        id_ranges_data = data.get('id_ranges', [])
 
         led_database = []
+        led_list = []
         for i in range(strand.numPixels()):
             led_database.append({})
+            led_list.append(0)
 
         for id_range_data_name in id_ranges_data:
-            id_range_data = id_ranges_data[id_range_data_name]
-            ids = id_range_data['ids'] if 'ids' in id_range_data else ""
-            id_start = id_range_data['id_start'] if 'id_start' in id_range_data else ""
-            id_end = id_range_data['id_end'] if 'id_end' in id_range_data else ""
-            animations = id_range_data['animations'] if 'animations' in id_range_data else []
-            default_anim = animations[config.current_mode] if config.current_mode in animations else 'off'
+            id_range_data = id_ranges_data.get(id_range_data_name)
+
+            ids = id_range_data.get('ids', "")
+            id_start = id_range_data.get('id_start', "")
+            id_end = id_range_data.get('id_end', "")
+            id_list = find_ids(ids, id_start, id_end)
+
+            animations = id_range_data.get('animations', [])
+            default_anim = animations.get(config.current_mode, 'off')
             parsed_anim = parse_animation_text(default_anim)
 
             for anim in animations:
                 if anim not in mode_list: mode_list.append(anim)
-
-            if len(ids) > 0:
-                id_list = ids.split(',')
-            else:
-                if 'id_start' in id_range_data and 'id_end' in id_range_data:
-                    id_list = range(int(id_start), int(id_end))
-                else:
-                    id_list = []
 
             for led_num in id_list:
                 led = int(led_num)
@@ -205,6 +231,7 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
                     led_database[led] = {
                         'id': led, 'color': picked_color, 'name': id_range_data_name, 'anim_text': default_anim
                     }
+                    led_list[led] = picked_color
                     # config.log.info("- Strand {} - Pixel {} - color: {}".format(strand_name, led, default_color))
                 else:
                     config.log.warning('Invalid led animation config: strand {} {}'.format(id_range_data_name, led))
@@ -222,6 +249,7 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
             led_database[id_data_led] = {
                 'id': id_data_led, 'color': picked_color, 'name': id_name, 'anim_text': default_anim
             }
+            led_list[id_data_led] = picked_color
 
             for anim in animations:
                 if anim not in mode_list: mode_list.append(anim)
@@ -231,9 +259,10 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
         if set_lights_on:
             strand.show()
         light_data.append(led_database)
+        light_color_data.append(led_list)
 
         config.animation_modes = mode_list
-    return light_data
+    return light_data, light_color_data
 
 
 def parse_animation_text(text):

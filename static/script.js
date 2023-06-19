@@ -1,10 +1,14 @@
 var status_check_timer;
+var mqtt_status_color = 'black';
 
+// TODO: Either convert everything to jQuery or to straight JS, not a mix
+// TODO: Clean up formatting, turn into a class to reduce technical debt
+
+const color_list = [
 // Generated from:
 // for c in colour.RGB_TO_COLOR_NAMES:
 //    print("  ['{}', '{}', '{}', '{}', '{}'],".format(colour.RGB_TO_COLOR_NAMES[c][0], c[0], c[1], c[2], colour.Color(rgb=(c[0]/255, c[1]/255, c[2]/255)).hex))
 //
-const color_list = [
   ['Black', '0', '0', '0', '#000'],
   ['Navy', '0', '0', '128', '#000080'],
   ['DarkBlue', '0', '0', '139', '#00008b'],
@@ -219,7 +223,6 @@ function setupIndexPage() {
     }
 }
 
-mqtt_status_color = 'black';
 function check_state() {
 // Pulls in a JSON object on the state of the pi and lights
 
@@ -318,33 +321,7 @@ function set_light_status(strands) {
     }
 }
 
-function setupServicePage() {
-    try {
-        document.getElementById('homeBtn').setAttribute('onclick', "goto('/',)");
-        document.getElementById('dashboardBtn').setAttribute('onclick', "window.open('../dashboard')");
-        document.getElementById('rebootBtn').setAttribute('onclick', "ajaxRequest('/reboot')");
-
-        try {
-            for (const id in serviceLabels) {
-                document.getElementById(id).innerHTML = serviceLabels[id].toUpperCase();
-            }
-        } catch (e) {
-            console.log(e)
-        }
-    } catch (e) {
-        console.log(e)
-    }
-}
 
 window.onload = function () {
-    try {
-        if (window.name === 'index') {
-            setupIndexPage();
-        }
-        if (window.name === 'service') {
-            setupServicePage();
-        }
-    } catch (e) {
-        console.log(e)
-    }
+    setupIndexPage();
 };

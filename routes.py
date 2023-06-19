@@ -9,16 +9,16 @@ Puts long-running tasks into processes that can be tracked and killed
 """
 import json
 from __main__ import app, mqtt_client
-from functions import func_rainbow, func_color, func_clear, get_status, setup_lights_from_configuration
+from functions import func_rainbow, func_color, func_clear, get_status, setup_lights_from_configuration, find_ids
 from multiprocessing import Process
 from flask import render_template, request
 
 import config
 import os
-from colour import Color as Colour, RGB_TO_COLOR_NAMES
+from colour import Color as Colour
 
 running_processes = []
-use_processes = True  # Set to False for testing processese, but messes up animations
+use_processes = True  # Set to False for testing processes, but messes up animations
 
 
 def handle_mqtt_message(message):
@@ -62,13 +62,6 @@ def index():
     return render_template("index.html", status=get_status().upper())
 
 
-# TODO: Remove
-@app.route("/service", methods=['GET'])
-def service():
-    config.log.info("User is browsing service page")
-    return render_template("service.html")
-
-
 @app.route("/mode/<string:mode>/", methods=["GET"])
 def action_mode(mode):
     config.log.info("Action Mode set to {}".format(mode))
@@ -80,13 +73,28 @@ def action_mode(mode):
 
 
 # ----------------------------
-@app.route("/rainbow", methods=["GET"])
+@app.route("/rainbow")
 def rainbow_view():
-    msg = "Rainbow process called, {} strips total".format(len(config.light_strips))
+    # TODO: Consider if animations should go across multiple strands?
+    strand = request.args.get('strand', None)
+    if (type(strand) == str or type(strand) == int) and int(strand) < len(config.light_strips):
+        light_strip = config.light_strips[int(strand)]
 
-    start_new_animation(msg)
-    for light_strip in config.light_strips:
-        start_process(func_rainbow, msg, light_strip)
+        ids = request.args.get('ids', "")
+        id_start = request.args.get('id_start', 0)
+        id_end = request.args.get('id_end', light_strip.numPixels())
+        id_list = find_ids(ids, id_start, id_end, limit_to=light_strip.numPixels())
+        if strand and len(id_list):
+            msg = "Rainbow on strip {} for {} lights".format(strand, len(id_list))
+            start_new_animation(msg)
+            start_process(func_rainbow, msg, {'strip': light_strip, 'id_list': id_list})
+
+    else:
+        msg = "Rainbow on {} strips total".format(len(config.light_strips))
+        start_new_animation(msg)
+        for light_strip in config.light_strips:
+            start_process(func_rainbow, msg, {'strip': light_strip})
+
     return msg
 
 

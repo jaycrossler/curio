@@ -3,6 +3,7 @@
 """
 Methods to call light effect functions - but stubbed out so that all functions work on a macintosh
 """
+import config
 
 
 class RGBW(int):
@@ -38,12 +39,14 @@ def Color(red, green, blue, white=0):
     """
     return RGBW(red, green, blue, white)
 
+times_set = 0
 
 class PixelStrip:
     num = 0
     pin = 0
     brightness = 0
     leds = []
+    current_strip = None
 
     def __init__(self, num, pin, freq_hz=800000, dma=10, invert=False,
                  brightness=255, channel=0, strip_type=None, gamma=None):
@@ -79,9 +82,30 @@ class PixelStrip:
 
     def setPixelColor(self, n, color):
         self.leds[n] = color
+        self.setColorInDB(n, color)
 
     def setPixelColorRGB(self, n, red, green, blue, white=0):
-        self.leds[n] = Color(red, green, blue)
+        color = Color(red, green, blue)
+        self.leds[n] = color
+        global times_set
+        times_set += 1
+        self.setColorInDB(n, color)
+
+    def setColorInDB(self, n, color):
+        global times_set
+        times_set += 1
+        if times_set % 100 == 0:
+            for i in range(self.numPixels()):
+                # Use CurrentStrip, or find the strip number if not set
+                # TODO: Improve this way of looking up strip, maybe on init?
+                if isinstance(self.current_strip, type(None)):
+                    j = 0
+                    for s in config.light_strips:
+                        if s == self:
+                            self.current_strip = j
+                        j += 1
+
+                config.set_color(self.current_strip, n, color)
 
     def getBrightness(self):
         return self.brightness

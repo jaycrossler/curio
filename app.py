@@ -9,7 +9,7 @@ and from within the process.
 """
 from flask import Flask
 from flask_mqtt import Mqtt
-from flask_debugtoolbar import DebugToolbarExtension
+# from flask_debugtoolbar import DebugToolbarExtension
 # import flask_monitoringdashboard as dashboard (Uses SciPy, which is hard to install, so skipped for now)
 
 from functions import initialize_lighting, setup_lights_from_configuration
@@ -20,12 +20,18 @@ __author___ = "Jay Crossler"
 __status__ = "Development"
 app_name = "Curio LED Manager"
 
-# TODO: Have "groups" of lights that will work across multiple strings and configs
-# TODO: Have a web page that modifies light groups, then assigns states and animations to them
-# TODO: Have an audio manager to also have sounds
-# TODO: Visualize light status on webpage, ideally on top of an image
+# TODO: Find why rainbow is running slow and configuration isn't updating
+# TODO: Verify if the config.light_color_data is working.  Is there a way to track strip color info?
 
-# TODO: Consider moving app and mqtt into config
+# TODO: Have a web page that modifies light groups, then assigns states and animations to them
+# TODO: Show currently running animations on web page
+# TODO: Build animations or lightsets on a range or subset of lights
+# TODO: Visualize light status on webpage, ideally on top of an image(s), and send image via MQTT if needed
+
+# TODO: Have an audio manager to also have sounds
+
+# TODO: Cleanup - Update dict access from a['key'] to a.get('key','default')
+# TODO: Cleanup - Consider moving app and mqtt into config
 mqtt_client = None
 app = None
 
@@ -83,7 +89,6 @@ def initialize_config_and_app():
         @mqtt_client.on_log()
         def handle_logging(client, userdata, level, buf):
             if level == 16:
-                # TODO: Have a visual green/red light on page if MQTT is working
                 if buf != 'Sending PINGREQ' and buf != 'Received PINGRESP':
                     config.log.info(buf)
             else:
@@ -125,5 +130,5 @@ def start_flask_app():
 if __name__ == '__main__':
     initialize_config_and_app()
     initialize_lighting()
-    config.light_data = setup_lights_from_configuration()
+    config.light_data, config.light_color_data = setup_lights_from_configuration()
     start_flask_app()
