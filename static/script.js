@@ -216,7 +216,35 @@ function setupIndexPage() {
         $( ".dropdownModeButton" ).change(function() {
             var selected = this.options[this.selectedIndex].value;
             ajaxRequest('/mode/' + selected);
-    });
+        });
+
+        $("#animation_add_button").on( "click", function(ev) {
+
+            var data = {
+                'animation': $('#inlineFormSelectAnim').val(),
+                'strand': parseInt($('#inlineFormSelectStrand').val()),
+                'ids': $('#specificSizeInputIDs').val(),
+                'id_start': parseInt($('#specificSizeInputIDStart').val()),
+                'id_end': parseInt($('#specificSizeInputIDEnd').val())
+            }
+
+            var url = "/animation?" + $.param(data);
+            $.ajax({
+                type: "GET",
+                url: url,
+                success: function(data) {
+                    console.log(data);
+                },
+                error: function(data) {
+
+                    // Some error in ajax call
+                    console.log("some Error");
+                }
+            });
+
+            ev.preventDefault();
+        });
+
 
     } catch (e) {
         console.log(e)
@@ -226,46 +254,50 @@ function setupIndexPage() {
 function check_state() {
 // Pulls in a JSON object on the state of the pi and lights
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', '/state');
+    var shouldQueryRun = document.getElementById('pollServerState').checked;
+    if (shouldQueryRun) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', '/state');
 
-    xhr.onload = function () {
-        // Check if we got 'true' as a response
-        if (xhr.status == 200) {
-            state = JSON.parse(xhr.responseText)
+        xhr.onload = function () {
+            // Check if we got 'true' as a response
+            if (xhr.status == 200) {
+                state = JSON.parse(xhr.responseText)
 
-            // Set MQTT light state
-            if (state.mqtt_status == 'connected') {
-                mqtt_status_color = 'green';
-            } else if (state.mqtt_status == 'disconnected') {
-                mqtt_status_color = 'red';
-            } else if (state.mqtt_status == 'not initialized') {
-                mqtt_status_color = 'black';
-            }
-
-            var anim_modes_from_xhr = state.modes;
-            if (animation_modes.length != anim_modes_from_xhr.length) {
-                animation_modes = anim_modes_from_xhr;
-                //Likely the list of modes changed, rebuild the drop down
-                var $picker = $('.dropdownModeButton');
-                $picker.empty(); //children().remove();
-                for (mode in anim_modes_from_xhr) {
-                    mode_name = anim_modes_from_xhr[mode]
-                    $picker.append(
-                        $('<option/>')
-                            .attr('value', mode_name).text(toTitleCase(mode_name)));
+                // Set MQTT light state
+                if (state.mqtt_status == 'connected') {
+                    mqtt_status_color = 'green';
+                } else if (state.mqtt_status == 'disconnected') {
+                    mqtt_status_color = 'red';
+                } else if (state.mqtt_status == 'not initialized') {
+                    mqtt_status_color = 'black';
                 }
 
-            }
+                var anim_modes_from_xhr = state.modes;
+                if (animation_modes.length != anim_modes_from_xhr.length) {
+                    animation_modes = anim_modes_from_xhr;
+                    //Likely the list of modes changed, rebuild the drop down
+                    var $picker = $('.dropdownModeButton');
+                    $picker.empty(); //children().remove();
+                    for (mode in anim_modes_from_xhr) {
+                        mode_name = anim_modes_from_xhr[mode]
+                        $picker.append(
+                            $('<option/>')
+                                .attr('value', mode_name).text(toTitleCase(mode_name)));
+                    }
 
-            set_light_status(state.strands);
+                }
+                set_animation_list(state);
+
+                set_light_status(state.strands);
+            }
+        };
+        try {
+            xhr.send();
+        } catch (e) {
+            console.log(e)
+            mqtt_status_connected = false;
         }
-    };
-    try {
-        xhr.send();
-    } catch (e) {
-        console.log(e)
-        mqtt_status_connected = false;
     }
 
     //If it's 'not initialized', stop checking
@@ -278,6 +310,44 @@ function check_state() {
         document.getElementById('mqtt_status').title = 'MQTT Disconnected';
     }
     status_check_timer = setTimeout(check_state, 5000);
+}
+
+var previous_animation_count = -1;
+function set_animation_list(state) {
+    var animations = state.animations_running;
+    var anim_count = animations.length;
+    if (anim_count != previous_animation_count) {
+//        previous_animation_count = anim_count;
+        var $table = $('#animation_list tbody');
+        $table.empty();
+        var i=0;
+        for (var a in animations) {
+            var anim = animations[a];
+            i++;
+            var $tr = $('<tr>');
+            var ids = anim.id_list;
+            var ids_length = '';
+            if (ids && ids.length) {
+                ids_length = ids.length;
+            }
+            $('<th>').attr('scope','row').text(i).appendTo($tr);
+            $('<td>').text(anim.process).appendTo($tr);
+            $('<td>').text(anim.started).appendTo($tr);
+            $('<td>').text(anim.animation).appendTo($tr);
+            $('<td>').text(anim.strand).appendTo($tr);
+            $('<td>').text(ids_length).appendTo($tr);
+            $('<td>').attr('class','table-danger')
+                .text("[X]").attr('style', 'cursor:pointer').on('click',function(ev) {
+
+                var id = ev.target.parentNode.children[1].innerText;
+                ajaxRequest('/animation/remove?animation_id=' + id);
+
+            }).appendTo($tr);
+            $table.append($tr);
+        }
+
+    }
+
 }
 
 function toTitleCase(str) {

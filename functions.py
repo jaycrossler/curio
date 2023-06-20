@@ -14,6 +14,8 @@ import config
 import random
 from colour import Color as colour_color
 
+animation_options = ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking']
+
 if platform.system() == 'Darwin':
     # This library doesn't import on Macintosh computers, ignore it and use a stub
     from rpi_fake import PixelStrip, Color
@@ -72,6 +74,21 @@ def func_rainbow(light_strip_data):
     set_status("Rainbow")
     run_rainbow(light_strip_data.get('strip'), light_strip_data.get('id_list'))
     return
+
+
+def valid_animation(anim):
+    return anim in animation_options
+# TODO: Lookup functions to run
+
+
+def func_animation(animation_data):
+    animation = animation_data.get('animation', None)
+    if valid_animation(animation):
+        if animation == 'rainbow':
+            func_rainbow(animation_data)
+        else:
+            # TODO: Add more
+            pass
 
 
 def func_clear():
@@ -165,6 +182,11 @@ def find_ids(ids=None, id_start=None, id_end=None, limit_to=None):
     if ids and len(ids) > 0:
         id_list = ids.split(',')
     else:
+        if id_start == 'NaN':
+            id_start = None
+        if id_end == 'NaN':
+            id_end = None
+
         if type(id_start) is str and len(id_start):
             id_start = int(id_start)
         if type(id_end) is str and len(id_end):
@@ -305,7 +327,7 @@ def parse_animation_text(text):
         if len(words) > 1:
             for word in words[1:]:
                 text = word.strip().lower()
-                if text in ['pulse', 'blink', 'cycle', 'warp']:
+                if valid_animation(text):
                     loop = text
                 if text in ['rainbow']:
                     special = text

@@ -24,13 +24,10 @@ app_name = "Curio LED Manager"
 # TODO: Verify if the config.light_color_data is working.  Is there a way to track strip color info?
 
 # TODO: Have a web page that modifies light groups, then assigns states and animations to them
-# TODO: Show currently running animations on web page
-# TODO: Build animations or lightsets on a range or subset of lights
 # TODO: Visualize light status on webpage, ideally on top of an image(s), and send image via MQTT if needed
 
 # TODO: Have an audio manager to also have sounds
 
-# TODO: Cleanup - Update dict access from a['key'] to a.get('key','default')
 # TODO: Cleanup - Consider moving app and mqtt into config
 mqtt_client = None
 app = None
@@ -96,7 +93,7 @@ def initialize_config_and_app():
         # End MQTT Handling
 
         @mqtt_client.on_disconnect()
-        def disconnected(client, userdata, flags, rc):
+        def disconnected(client=None, userdata=None, flags=None, rc=None):
             config.mqtt_working = False
 
     # Set up web page helpers

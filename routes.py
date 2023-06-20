@@ -9,15 +9,17 @@ Puts long-running tasks into processes that can be tracked and killed
 """
 import json
 from __main__ import app, mqtt_client
-from functions import func_rainbow, func_color, func_clear, get_status, setup_lights_from_configuration, find_ids
+from functions import func_animation, func_color, func_clear, get_status, \
+    valid_animation, setup_lights_from_configuration, find_ids
 from multiprocessing import Process
 from flask import render_template, request
+from datetime import datetime
 
 import config
 import os
 from colour import Color as Colour
 
-running_processes = []
+running_processes = []  # Database of running processes
 use_processes = True  # Set to False for testing processes, but messes up animations
 
 
@@ -53,6 +55,7 @@ def handle_mqtt_message(message):
             rgb_color(payload)
     else:
         config.log.debug("Unrecognized topic route sent: {}".format(topic))
+    # TODO: Add Animations querystring options
 
 
 # Web route pages
@@ -73,11 +76,33 @@ def action_mode(mode):
 
 
 # ----------------------------
-@app.route("/rainbow")
-def rainbow_view():
+@app.route("/animation/remove")
+def remove_animation_view():
+    animation_id = request.args.get('animation_id', None)
+    msg = ''
+    if animation_id:
+        global running_processes
+        anim_id = int(animation_id)
+
+        for p in running_processes:
+            process = p.get('process')
+            if process.pid == anim_id:
+                msg = "Stopping {} with args {}".format(process.name, p.get('arguments'))
+                config.log.debug(msg)
+                running_processes.remove(p)
+                process.kill()
+                process.join()
+    return msg
+
+
+@app.route("/animation")
+def add_animation_view():
     # TODO: Consider if animations should go across multiple strands?
     strand = request.args.get('strand', None)
-    if (type(strand) == str or type(strand) == int) and int(strand) < len(config.light_strips):
+    animation = request.args.get('animation', 'rainbow')
+    valid_data = (type(strand) == str or type(strand) == int) and int(strand) < len(config.light_strips)
+
+    if valid_data and valid_animation(animation):
         light_strip = config.light_strips[int(strand)]
 
         ids = request.args.get('ids', "")
@@ -85,15 +110,18 @@ def rainbow_view():
         id_end = request.args.get('id_end', light_strip.numPixels())
         id_list = find_ids(ids, id_start, id_end, limit_to=light_strip.numPixels())
         if strand and len(id_list):
-            msg = "Rainbow on strip {} for {} lights".format(strand, len(id_list))
+            msg = "Animation {} on strip {} for {} lights".format(animation, strand, len(id_list))
             start_new_animation(msg)
-            start_process(func_rainbow, msg, {'strip': light_strip, 'id_list': id_list})
+            start_process(func_animation, msg, {'strip': light_strip, 'strand': strand,
+                                                'animation': animation, 'id_list': id_list})
+        else:
+            msg = "Animation {} requested but no lights given".format(animation)
 
     else:
-        msg = "Rainbow on {} strips total".format(len(config.light_strips))
+        msg = "Animation {} on {} strips total".format(animation, len(config.light_strips))
         start_new_animation(msg)
         for light_strip in config.light_strips:
-            start_process(func_rainbow, msg, {'strip': light_strip})
+            start_process(func_animation, msg, {'strip': light_strip})
 
     return msg
 
@@ -181,9 +209,17 @@ def get_mqtt_status():
 @app.route('/state')
 def get_state():
     # TODO: Add CPU stats, current_mode, details on each light, etc
+    processes = []
+    for p in running_processes:
+        process = p.get('process')
+        arguments = p.get('arguments')
+        processes.append({'process': process.pid, 'name': process.name, 'animation': arguments.get('animation'),
+                          'strand': arguments.get('strand'),
+                          'started': p.get('started').strftime("%H:%M:%S"), 'id_list': arguments.get('id_list')})
+
     state_obj = {
         'mqtt_status': get_mqtt_status(),
-        'animations_running': len(running_processes),
+        'animations_running': processes,
         'strands': get_strands_as_json(),
         'mode': config.current_mode,
         'modes': config.animation_modes
@@ -256,7 +292,6 @@ def reboot():
 def start_new_animation(log_message, mqtt_message=None):
     if not mqtt_message:
         mqtt_message = log_message
-    stop_everything()
     config.log.info(log_message)
     if mqtt_client:
         mqtt_client.publish(config.setting('mqtt_publish_topic'), mqtt_message)
@@ -269,7 +304,7 @@ def start_process(ftarget, fname, arg=None):
             global running_processes
             proc = Process(target=ftarget, name=fname, args=(arg,))
             config.log.info('Start and append to process list: {} with argument {}'.format(proc.name, arg))
-            running_processes.append(proc)
+            running_processes.append({'process': proc, 'arguments': arg, 'started': datetime.now()})
             proc.daemon = True
             proc.start()
         else:
@@ -288,7 +323,8 @@ def stop_everything():
         config.log.info("Stopping long processes: {}".format(len(running_processes)))
 
         for p in running_processes:
-            config.log.debug("Stopping " + p.name)
-            running_processes.remove(p)
-            p.kill()
-            p.join()
+            process = p.get('process')
+            config.log.debug("Stopping {} with args {}".format(process.name, p.get('arguments')))
+            running_processes.remove(process)
+            process.kill()
+            process.join()
