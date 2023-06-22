@@ -161,27 +161,28 @@ def wheel(pos):
 def rainbow_cycle(strip, anim_config=None, id_list=None):
     """Draw rainbow that uniformly distributes itself across all pixels (or all pixels in id_list)."""
 
-    speed = anim_config.get('speed', 3)
-    wait_ms = remap(1, 6, 200, 1, speed)
+    speed = anim_config.get('loop_speed', 3)
+    wait_ms = remap(1, 6, .04, .001, speed)
 
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
 
+    config.log.info("PULSE SPEED {} MS DELAY.  {} pixels".format(wait_ms, pixels_to_loop_on))
+
     while True:
         for j in range(256):
-            if stop_flag:
-                break
             for i in range(pixels_to_loop_on):
-                if stop_flag:
-                    break
                 try:
                     pixel_to_set = id_list[i] if id_list else i
-                    strip.setPixelColor(pixel_to_set, wheel((int(i * 256 / pixels_to_loop_on) + j) & 255))
+                    color = wheel((int(i * 256 / pixels_to_loop_on) + j) & 255)
+                    strip.setPixelColor(pixel_to_set, color)
+                    #config.log.info("Setting {} to {}".format(pixel_to_set, color))
                 except IndexError:
                     config.log.warn("IndexError using {} when numPixels is {} and"
                                     " length of leds is {}".format(i, strip.numPixels(), len(strip.leds)))
+            #config.log.info("Loop {}".format(j))
 
-                strip.show()
-                time.sleep(wait_ms)
+            strip.show()
+            time.sleep(wait_ms)
 
 
 def pulse_cycle(strip, anim_config=None, id_list=None):
@@ -200,10 +201,11 @@ def pulse_cycle(strip, anim_config=None, id_list=None):
     if len(provided_colors) > 0:
         starting_color = provided_colors[0]
 
-    speed = anim_config.get('speed', 3)
-    wait_ms = remap(1, 6, 200, 1, speed)
+    speed = anim_config.get('loop_speed', 3)
+    wait_ms = remap(1, 6, 80, 2, speed)
+    #config.log.info("PULSE SPEED {} MS DELAY from {}".format(wait_ms, anim_config))
 
-    pulse_height = 10
+    pulse_height = 100
     pulse_width = .5  # TODO: Have a way to change pulse width
 
     # Either loop on all pixels or the range passed in

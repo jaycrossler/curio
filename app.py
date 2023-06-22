@@ -109,7 +109,7 @@ def start_flask_app():
         if mqtt_client:
             mqtt_client.init_app(app)
         app.run(
-            use_reloader=False,
+            use_reloader=True,
             debug=app.debug,
             host='0.0.0.0',
             port=config.setting('app_port', 5000),
