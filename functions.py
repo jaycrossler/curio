@@ -16,7 +16,7 @@ import time
 from colour import Color as colour_color
 from itertools import chain
 from math import sin, pi
-from includes import blend_colors, clamp
+from includes import *
 
 animation_options = ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking']
 
@@ -181,44 +181,47 @@ def rainbow_cycle(strip, wait_ms=20, id_list=None):
 
 
 # TODO: Pull speed out and use for wait_ms
-def pulse_cycle(strip, wait_ms=20, anim_config=None, id_list=None):
+def pulse_cycle(strip, wait_ms=100, anim_config=None, id_list=None):
     if anim_config is None:
         anim_config = {}
 
     """Pulse pixels repeatedly"""
-    # TODO: Have a sin pattern where the center moves towards
+    # Have a sin pattern where the center moves towards
     #  ending_color and back repeatedly
 
-    starting_color = Color(0, 0, 1)
-    ending_color = Color(1, 1, 1)
+    starting_color = Color(0, 0, 255)
+    ending_color = Color(255, 255, 255)
     provided_colors = anim_config.get('color_list', [])
     if len(provided_colors) > 1:
         ending_color = provided_colors[1]
     if len(provided_colors) > 0:
         starting_color = provided_colors[0]
 
-    pulse_height = 100
-    pulse_width = .5 # TODO: Have a way to change pulse width
+    pulse_height = 10
+    pulse_width = .5  # TODO: Have a way to change pulse width
 
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
 
-    try:
+    while True:
+        iteration = 0
         for height_of_pulse in chain(range(0, pulse_height), range(pulse_height, 0, -1)):
+            pix = []
             for i in range(pixels_to_loop_on):
                 pixel_to_set = id_list[i] if id_list else i
 
                 # Note: .5*pi = 1, 1.5*pi = -1.  So sin(x + .5pi) + 1 ranges from 0to2 and 0to2pi
                 # .5*(sin((2*pi*x) - (.5*pi))+1) goes from 0to1 and 0to1
+                x_range = i/pixels_to_loop_on
+                amplitude_of_point = .5*(sin((2*pi*x_range) - (.5*pi))+1)
+                y_range = height_of_pulse/pulse_height
 
-                amplitude_of_point = .5*(sin((2*pi*i) - (.5*pi))+1)
-
-                color = blend_colors(starting_color, ending_color, amplitude_of_point * height_of_pulse)
+                color = blend_colors(starting_color, ending_color, amplitude_of_point * y_range)
                 strip.setPixelColor(pixel_to_set, color)
-    except Exception as ex:
-        print(ex)
-
-    strip.show()
-    time.sleep(wait_ms / 1000.0)
+                pix.append(color_str(color))
+            strip.show()
+            config.log.info("{}: [{} {}] {}".format(iteration, color_str(starting_color), color_str(ending_color), " ".join(pix)))
+            iteration += 1
+            time.sleep(wait_ms / 1000.0)
 
 
 def find_ids(ids=None, id_start=None, id_end=None, limit_to=None):

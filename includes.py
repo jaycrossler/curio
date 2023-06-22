@@ -25,6 +25,9 @@ class RGBW(int):
     def w(self):
         return (self >> 24) & 0xff
 
+    def __repr__(self):
+        return f"RGBW({self.r}, {self.g}, {self.b})"
+
 
 def Color(red, green, blue, white=0):
     """Convert the provided red, green, blue color to a 24-bit color value.
@@ -44,10 +47,14 @@ def clamp(val, minval, maxval):
 
 def blend_colors(c1, c2, percentage):
     # c1 and c2 should be Color RGBW objects; perc should be from 0..1
-    r = 255 * ((c1.r * (1-percentage)) + (c2.r * percentage))
-    g = 255 * ((c1.g * (1-percentage)) + (c2.g * percentage))
-    b = 255 * ((c1.b * (1-percentage)) + (c2.b * percentage))
+    r = ((c1.r * (1-percentage)) + (c2.r * percentage))
+    g = ((c1.g * (1-percentage)) + (c2.g * percentage))
+    b = ((c1.b * (1-percentage)) + (c2.b * percentage))
     return Color(int(r), int(g), int(b))
+
+
+def color_str(color):
+    return "{:0=3d}/{:0=3d}/{:0=3d}".format(color.r, color.g, color.b)
 
 
 def merge_dictionaries(source, destination):
