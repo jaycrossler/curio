@@ -20,8 +20,9 @@ __author___ = "Jay Crossler"
 __status__ = "Development"
 app_name = "Curio LED Manager"
 
-# TODO: Find why rainbow is running slow and configuration isn't updating
-# TODO: Verify if the config.light_color_data is working.  Is there a way to track strip color info?
+# TODO: Find why rainbow is running slow and configuration isn't updating - will processes work as planned?
+# TODO: Decide if we need to change the LED library?
+# TODO: Verify if the config.light_color_data is working.  Is there a better way to track strip color info?
 
 # TODO: Have a web page that modifies light groups, then assigns states and animations to them
 # TODO: Visualize light status on webpage, ideally on top of an image(s), and send image via MQTT if needed

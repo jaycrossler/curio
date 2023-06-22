@@ -12,7 +12,11 @@ __status__ = "Development"
 import platform
 import config
 import random
+import time
 from colour import Color as colour_color
+from itertools import chain
+from math import sin, pi
+from includes import blend_colors, clamp
 
 animation_options = ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking']
 
@@ -21,7 +25,6 @@ if platform.system() == 'Darwin':
     from rpi_fake import PixelStrip, Color
 else:
     from rpi_ws281x import PixelStrip, Color
-import time
 
 
 LED_FREQ_HZ = 800000  # LED signal frequency in hertz (usually 800khz)
@@ -70,25 +73,44 @@ def func_color(r, g, b):
     return
 
 
-def func_rainbow(light_strip_data):
-    set_status("Rainbow")
-    run_rainbow(light_strip_data.get('strip'), light_strip_data.get('id_list'))
-    return
-
-
 def valid_animation(anim):
     return anim in animation_options
 # TODO: Lookup functions to run
 
 
 def func_animation(animation_data):
-    animation = animation_data.get('animation', None)
-    if valid_animation(animation):
+    """Generic Animation controller, triggers correct animation based on options."""
+    animation_config = animation_data.get('command_parsed', {})
+    animation_command = animation_data.get('command', {})
+    animation = animation_config.get('animation', None)
+
+    global status
+    status = animation
+
+    light_strip = animation_data.get('strip')
+    strand = animation_data.get('strand')
+
+    if valid_animation(animation) and light_strip:
+        id_list = animation_data.get('id_list', [])
+
+        status = "Starting '{}' animation on strip {} with {} LEDs".format(animation_command, strand, len(id_list))
+        config.log.info(status)
+
+        # ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking']
         if animation == 'rainbow':
-            func_rainbow(animation_data)
+            rainbow_cycle(light_strip, id_list=id_list)
+        elif animation == 'pulsing':
+            pulse_cycle(light_strip, anim_config=animation_config, id_list=id_list)
+
         else:
             # TODO: Add more
             pass
+
+        # Should only run when an animation's cycle ends
+        # TODO: Instead of clearing, should we set to light default?
+        reset_strip(light_strip)
+
+    return
 
 
 def func_clear():
@@ -97,23 +119,6 @@ def func_clear():
     set_status("Clearing all lights")
     for light_strip in config.light_strips:
         clear(light_strip)
-    return
-
-
-def run_rainbow(light_strip, id_list=None):
-    """Vary the colors in a rainbow pattern, slightly changing brightness, and
-    quit if stop_flag set."""
-    if id_list is None:
-        id_list = []
-
-    global stop_flag
-    stop_flag = False
-
-    config.log.info("Starting rainbow animation on strip with {} leds".format(light_strip.numPixels()))
-
-    rainbow_cycle(light_strip, id_list=id_list)
-
-    reset_strip(light_strip)
     return
 
 
@@ -153,15 +158,12 @@ def wheel(pos):
         return Color(0, pos * 3, 255 - pos * 3)
 
 
-def rainbow_cycle(strip, wait_ms=20, iterations=5, id_list=None):
+def rainbow_cycle(strip, wait_ms=20, id_list=None):
     """Draw rainbow that uniformly distributes itself across all pixels (or all pixels in id_list)."""
-    # TODO: Remove iterations variable
-
-    global stop_flag
 
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
 
-    for j in range(256 * iterations):
+    for j in range(256):
         if stop_flag:
             break
         for i in range(pixels_to_loop_on):
@@ -176,6 +178,47 @@ def rainbow_cycle(strip, wait_ms=20, iterations=5, id_list=None):
 
             strip.show()
             time.sleep(wait_ms / 1000.0)
+
+
+# TODO: Pull speed out and use for wait_ms
+def pulse_cycle(strip, wait_ms=20, anim_config=None, id_list=None):
+    if anim_config is None:
+        anim_config = {}
+
+    """Pulse pixels repeatedly"""
+    # TODO: Have a sin pattern where the center moves towards
+    #  ending_color and back repeatedly
+
+    starting_color = Color(0, 0, 1)
+    ending_color = Color(1, 1, 1)
+    provided_colors = anim_config.get('color_list', [])
+    if len(provided_colors) > 1:
+        ending_color = provided_colors[1]
+    if len(provided_colors) > 0:
+        starting_color = provided_colors[0]
+
+    pulse_height = 100
+    pulse_width = .5 # TODO: Have a way to change pulse width
+
+    pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
+
+    try:
+        for height_of_pulse in chain(range(0, pulse_height), range(pulse_height, 0, -1)):
+            for i in range(pixels_to_loop_on):
+                pixel_to_set = id_list[i] if id_list else i
+
+                # Note: .5*pi = 1, 1.5*pi = -1.  So sin(x + .5pi) + 1 ranges from 0to2 and 0to2pi
+                # .5*(sin((2*pi*x) - (.5*pi))+1) goes from 0to1 and 0to1
+
+                amplitude_of_point = .5*(sin((2*pi*i) - (.5*pi))+1)
+
+                color = blend_colors(starting_color, ending_color, amplitude_of_point * height_of_pulse)
+                strip.setPixelColor(pixel_to_set, color)
+    except Exception as ex:
+        print(ex)
+
+    strip.show()
+    time.sleep(wait_ms / 1000.0)
 
 
 def find_ids(ids=None, id_start=None, id_end=None, limit_to=None):
@@ -235,7 +278,7 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
             ids = id_range_data.get('ids', "")
             id_start = id_range_data.get('id_start', "")
             id_end = id_range_data.get('id_end', "")
-            id_list = find_ids(ids, id_start, id_end)
+            id_list = find_ids(ids, id_start, id_end, limit_to=strand.numPixels())
 
             animations = id_range_data.get('animations', [])
             default_anim = animations.get(config.current_mode, 'off')
@@ -288,7 +331,7 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
 
 
 def parse_animation_text(text):
-    loop = None
+    animation = None
     loop_modifier = None
     loop_speed = None
     special = None
@@ -297,7 +340,7 @@ def parse_animation_text(text):
 
     # If "off" passed in, field is set to: False, catch that with an if statement
     if text and len(text) > 3:
-        # Format is 'color word(s)', 'loop', 'modifier', 'speed', 'special'
+        # Format is 'color word(s)', 'animation', 'modifier', 'speed', 'special'
         # example: "yellow, pulsing, random" or "red and white, pulsing" or "blue:.1"
         text = text.strip().lower()
 
@@ -323,21 +366,29 @@ def parse_animation_text(text):
                 config.log.warning(
                     'Color "{}" not recognized from config.yaml strand animation settings'.format(color_name_split))
 
-        # See if an animation was entered
+        # See if an animation or supporting information was entered
         if len(words) > 1:
             for word in words[1:]:
                 text = word.strip().lower()
                 if valid_animation(text):
-                    loop = text
-                if text in ['rainbow']:
-                    special = text
-                if text in ['random', 'console']:
+                    animation = text
+                if text in ['random', 'centered', 'cycled']:
                     loop_modifier = text
-                if text in ['slow', 'fast', 'gentle', '1', '2', '3', '4', '5', '6']:
-                    loop_speed = text
+                if text in ['slow', '1', 1]:
+                    loop_speed = 1
+                if text in ['gentle', '2', 2]:
+                    loop_speed = 2
+                if text in ['medium', '3', 3]:
+                    loop_speed = 3
+                if text in ['speedy', '4', 4]:
+                    loop_speed = 4
+                if text in ['medium', '5', 5]:
+                    loop_speed = 5
+                if text in ['fast', '6', 6]:
+                    loop_speed = 6
 
     return {'color_list': color_list, 'color_variations': variation_list, 'special': special,
-            'loop': loop, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed }
+            'animation': animation, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed }
 
 
 def color_from_list_with_range(parsed_animation):
@@ -386,11 +437,6 @@ def random_color_range(color, ranges):
 
     return Color(new_r, new_g, new_b)
 
-
-def clamp(val, minval, maxval):
-    if val < minval: return minval
-    if val > maxval: return maxval
-    return val
 
 # Not Used:
 def rainbow(strip, wait_ms=20, iterations=1):

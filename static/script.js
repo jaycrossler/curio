@@ -223,9 +223,18 @@ function setupIndexPage() {
             var data = {
                 'animation': $('#inlineFormSelectAnim').val(),
                 'strand': parseInt($('#inlineFormSelectStrand').val()),
+                'color': $('#animationColor').val(),
+                'modifier': $('#animationModifiers').val(),
+                'speed': parseInt($('#animationSpeed').val()),
                 'ids': $('#specificSizeInputIDs').val(),
                 'id_start': parseInt($('#specificSizeInputIDStart').val()),
                 'id_end': parseInt($('#specificSizeInputIDEnd').val())
+            }
+
+            for (let k in data) {
+                if (Number.isNaN(data[k]) || data[k]==="") {
+                    delete data[k]
+                }
             }
 
             var url = "/animation?" + $.param(data);
@@ -284,6 +293,21 @@ function check_state() {
                         $picker.append(
                             $('<option/>')
                                 .attr('value', mode_name).text(toTitleCase(mode_name)));
+                    }
+
+                    //Also rebuild common settings
+                    var $picker = $('#inlineFormSelectStrand');
+                    $picker.empty();
+                    var i=0;
+                    for (strand in state.strands) {
+                        strand_name = state.strands[strand].strand_name;
+                        leds = state.strands[strand].strand_info.size;
+                        strand_text = 'Strand ' + i + ' - ' + leds + ' LEDs';
+                        $picker.append(
+                            $('<option/>')
+                                .attr('title', strand_name)
+                                .attr('value', i).text(toTitleCase(strand_text)));
+                        i++;
                     }
 
                 }

@@ -9,8 +9,10 @@ Puts long-running tasks into processes that can be tracked and killed
 """
 import json
 from __main__ import app, mqtt_client
+
 from functions import func_animation, func_color, func_clear, get_status, \
-    valid_animation, setup_lights_from_configuration, find_ids
+    valid_animation, setup_lights_from_configuration, find_ids, parse_animation_text
+from includes import merge_dictionaries
 from multiprocessing import Process
 from flask import render_template, request
 from datetime import datetime
@@ -95,11 +97,20 @@ def remove_animation_view():
     return msg
 
 
+# TODO: Route from mqtt and from calls
 @app.route("/animation")
 def add_animation_view():
     # TODO: Consider if animations should go across multiple strands?
     strand = request.args.get('strand', None)
     animation = request.args.get('animation', 'rainbow')
+    color = request.args.get('color', None)
+    modifier = request.args.get('modifier', None)
+    speed = request.args.get('speed', None)
+
+    # TODO: Parse through parse_animation_text to clean up inputs
+    animation_text = "{}, {}, {}, {}".format(color, animation, modifier, speed)
+    animation_data = parse_animation_text(animation_text)
+
     valid_data = (type(strand) == str or type(strand) == int) and int(strand) < len(config.light_strips)
 
     if valid_data and valid_animation(animation):
@@ -112,8 +123,12 @@ def add_animation_view():
         if strand and len(id_list):
             msg = "Animation {} on strip {} for {} lights".format(animation, strand, len(id_list))
             start_new_animation(msg)
-            start_process(func_animation, msg, {'strip': light_strip, 'strand': strand,
-                                                'animation': animation, 'id_list': id_list})
+
+            animation_data = merge_dictionaries(
+                animation_data, {'strip': light_strip, 'strand': strand, 'id_list': id_list,
+                                 'command': animation_text, 'command_parsed': animation_data})
+
+            start_process(func_animation, msg, animation_data)
         else:
             msg = "Animation {} requested but no lights given".format(animation)
 

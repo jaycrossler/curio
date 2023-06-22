@@ -1,6 +1,7 @@
 import os
 import logger
 from yaml import safe_load
+from includes import merge_dictionaries
 
 # Configuration Variables that are accessed by other scripts
 light_strips = []
@@ -49,21 +50,6 @@ def setting(name, default_if_blank=None):
             return default_if_blank
         else:
             log.error('SETTING MISSING: {}'.format(name))
-
-
-def merge_dictionaries(source, destination):
-    # """
-    # Sourced from: https://stackoverflow.com/questions/20656135/python-deep-merge-dictionary-data
-    # """
-    for key, value in source.items():
-        if isinstance(value, dict):
-            # get node or create one
-            node = destination.setdefault(key, {})
-            merge_dictionaries(value, node)
-        else:
-            destination[key] = value
-
-    return destination
 
 
 # TODO: This is an experiment to see if we can keep a DB of colors

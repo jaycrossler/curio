@@ -82,15 +82,45 @@
   <div class="col-12" style="display:inline">
     <label class="col-sm col-form-label col-form-label-sm" for="inlineFormSelectAnim">Animation</label>
     <select id="inlineFormSelectAnim">
-      <option value="rainbow" selected>Rainbow</option>
-      <option value="blink">Blink</option>
+      <option value="rainbow">Rainbow</option>
+      <option value="wheel">Wheel</option>
+      <option value="pulsing" selected>Pulsing</option>
       <option value="warp">Warp</option>
+      <option value="blinking">Blinking</option>
+      <option value="blinkenlicht">Blinkenlicht</option>
+    </select>
+  </div>
+
+  <div class="col-12" style="display:inline">
+    <label class="col-sm col-form-label col-form-label-sm" for="animationColor">Color</label>
+    <input type="text" id="animationColor" placeholder="blue" title="Color(s) if animation needs it with colons for variance - 'blue' or '#f00:.2' or '#cafeba' or 'purple and blue:.2'">
+  </div>
+
+  <div class="col-12" style="display:inline">
+    <label class="col-sm col-form-label col-form-label-sm" for="animationModifiers">Modifiers</label>
+    <select id="animationModifiers">
+      <option value="" selected></option>
+      <option value="random" selected>Random</option>
+      <option value="centered">Centered</option>
+      <option value="cycled">Cycled</option>
+    </select>
+  </div>
+
+  <div class="col-12" style="display:inline">
+    <label class="col-sm col-form-label col-form-label-sm" for="animationSpeed">Speed</label>
+    <select id="animationSpeed">
+      <option value="1">1: Slow</option>
+      <option value="2">2: Gentle</option>
+      <option value="3" selected>3: Medium</option>
+      <option value="4">4: Spritely</option>
+      <option value="5">5: Speedy</option>
+      <option value="6">6: Fast</option>
     </select>
   </div>
 
   <div class="col-12" style="display:inline">
     <label class="col-sm col-form-label col-form-label-sm" for="specificSizeInputIDStart">Starting LED</label>
-    <input type="text" id="specificSizeInputIDStart" placeholder=""style="width:40px" maxlength="3" title="Something like 0 - the LED # that the animation should start at">
+    <input type="text" id="specificSizeInputIDStart" placeholder="" style="width:40px" maxlength="3" title="Something like 0 - the LED # that the animation should start at">
   </div>
 
   <div class="col-12" style="display:inline">
