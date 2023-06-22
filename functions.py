@@ -98,7 +98,7 @@ def func_animation(animation_data):
 
         # ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking']
         if animation == 'rainbow':
-            rainbow_cycle(light_strip, id_list=id_list)
+            rainbow_cycle(light_strip, anim_config=animation_config, id_list=id_list)
         elif animation == 'pulsing':
             pulse_cycle(light_strip, anim_config=animation_config, id_list=id_list)
 
@@ -158,37 +158,40 @@ def wheel(pos):
         return Color(0, pos * 3, 255 - pos * 3)
 
 
-def rainbow_cycle(strip, wait_ms=20, id_list=None):
+def rainbow_cycle(strip, anim_config=None, id_list=None):
     """Draw rainbow that uniformly distributes itself across all pixels (or all pixels in id_list)."""
+
+    speed = anim_config.get('speed', 3)
+    wait_ms = remap(1, 6, 200, 1, speed)
 
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
 
-    for j in range(256):
-        if stop_flag:
-            break
-        for i in range(pixels_to_loop_on):
+    while True:
+        for j in range(256):
             if stop_flag:
                 break
-            try:
-                pixel_to_set = id_list[i] if id_list else i
-                strip.setPixelColor(pixel_to_set, wheel((int(i * 256 / pixels_to_loop_on) + j) & 255))
-            except IndexError:
-                config.log.warn("IndexError using {} when numPixels is {} and"
-                                " length of leds is {}".format(i, strip.numPixels(), len(strip.leds)))
+            for i in range(pixels_to_loop_on):
+                if stop_flag:
+                    break
+                try:
+                    pixel_to_set = id_list[i] if id_list else i
+                    strip.setPixelColor(pixel_to_set, wheel((int(i * 256 / pixels_to_loop_on) + j) & 255))
+                except IndexError:
+                    config.log.warn("IndexError using {} when numPixels is {} and"
+                                    " length of leds is {}".format(i, strip.numPixels(), len(strip.leds)))
 
-            strip.show()
-            time.sleep(wait_ms / 1000.0)
+                strip.show()
+                time.sleep(wait_ms)
 
 
-# TODO: Pull speed out and use for wait_ms
-def pulse_cycle(strip, wait_ms=100, anim_config=None, id_list=None):
+def pulse_cycle(strip, anim_config=None, id_list=None):
+    """Pulse pixels repeatedly in a sine wave pattern where the center moves towards
+     ending_color and back repeatedly """
+
     if anim_config is None:
         anim_config = {}
 
-    """Pulse pixels repeatedly"""
-    # Have a sin pattern where the center moves towards
-    #  ending_color and back repeatedly
-
+    # Use first two colors passed in or go from blue to white
     starting_color = Color(0, 0, 255)
     ending_color = Color(255, 255, 255)
     provided_colors = anim_config.get('color_list', [])
@@ -197,30 +200,34 @@ def pulse_cycle(strip, wait_ms=100, anim_config=None, id_list=None):
     if len(provided_colors) > 0:
         starting_color = provided_colors[0]
 
+    speed = anim_config.get('speed', 3)
+    wait_ms = remap(1, 6, 200, 1, speed)
+
     pulse_height = 10
     pulse_width = .5  # TODO: Have a way to change pulse width
 
+    # Either loop on all pixels or the range passed in
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
 
     while True:
-        iteration = 0
+        # iteration = 0
         for height_of_pulse in chain(range(0, pulse_height), range(pulse_height, 0, -1)):
-            pix = []
+            # pix = []
             for i in range(pixels_to_loop_on):
                 pixel_to_set = id_list[i] if id_list else i
 
-                # Note: .5*pi = 1, 1.5*pi = -1.  So sin(x + .5pi) + 1 ranges from 0to2 and 0to2pi
+                # Note on math: .5*pi = 1, 1.5*pi = -1.  So sin(x + .5pi) + 1 ranges from 0to2 and 0to2pi
                 # .5*(sin((2*pi*x) - (.5*pi))+1) goes from 0to1 and 0to1
-                x_range = i/pixels_to_loop_on
+                x_range = (i+.5)/(pixels_to_loop_on+1)  # Set it so the first is always a little into the color mix
                 amplitude_of_point = .5*(sin((2*pi*x_range) - (.5*pi))+1)
                 y_range = height_of_pulse/pulse_height
 
                 color = blend_colors(starting_color, ending_color, amplitude_of_point * y_range)
                 strip.setPixelColor(pixel_to_set, color)
-                pix.append(color_str(color))
+                # pix.append(color_str(color))
             strip.show()
-            config.log.info("{}: [{} {}] {}".format(iteration, color_str(starting_color), color_str(ending_color), " ".join(pix)))
-            iteration += 1
+            # config.log.info("{}: [{} {}] {}".format(iteration, color_str(starting_color), color_str(ending_color), " ".join(pix)))
+            # iteration += 1
             time.sleep(wait_ms / 1000.0)
 
 
