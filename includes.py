@@ -8,7 +8,6 @@ __status__ = "Development"
 
 import random
 from colour import Color as ColourColor
-from config import log
 
 animation_options = ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking', 'twinkle']
 
@@ -204,7 +203,7 @@ def parse_animation_text(text):
                 color_list.append(color)
                 variation_list.append(variations)
             except Exception:
-                log.warning(
+                print(
                     'Color "{}" not recognized from config.yaml strand animation settings'.format(color_name_split))
 
         # See if an animation or supporting information was entered

@@ -165,30 +165,30 @@ def rainbow_cycle(strip, anim_config=None, id_list=None):
             strip.show()
             time.sleep(wait_ms)
 
-
+#TODO: Rename as Blinkenlicht
 def twinkle_cycle(strip, anim_config=None, id_list=None):
     """Twinkle pixels through each color in list """
 
     if anim_config is None:
         anim_config = {}
 
-    # Get colors, and add two yellows if no colors given
+    # Get colors, and add yellow if no colors given
     provided_colors = anim_config.get('color_list', [])
     if len(provided_colors) < 1:
-        provided_colors.append(Color(255, 232, 153))
+        provided_colors.append(Color(0, 0, 0))
     if len(provided_colors) < 2:
         provided_colors.append(Color(247, 218, 76))
 
     speed = anim_config.get('loop_speed', 3)
-    wait_ms = remap(1, 6, 100, 10, speed)  # Map speed setting from 1-6
+    wait_ms = remap(1, 6, 200, 30, speed)  # Map speed setting from 1-6
 
     # TODO: Decide if these should be variables
-    max_animation_amount = 10  # Should be greater than 2 at least
+    max_animation_amount = 2 + (5 * speed)  # Should be greater than 2 at least
     chance_to_increase_brightness = .05
     chance_to_change_colors = .05
     chance_to_start_a_twinkle = float(anim_config.get('density', .3))
-    speed_to_blend = .3
-    starting_color = Color(0, 0, 0)
+    speed_to_blend = .05 * speed
+    starting_color = provided_colors[0]
 
     # Either loop on all pixels or the range passed in
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
@@ -207,45 +207,56 @@ def twinkle_cycle(strip, anim_config=None, id_list=None):
     while True:
         # Loop through each pixel and randomly blend it towards a target color
         new_color = provided_colors[iteration % len(provided_colors)]
+        try:
+            for i in range(pixels_to_loop_on):
+                pixel_to_set = id_list[i] if id_list else i
+                current_animation_amount = led_status_list[i]
+                current_color_target = led_color_list[i]
+                current_color = strip.getPixelColorRGB(pixel_to_set)
 
-        for i in range(pixels_to_loop_on):
-            pixel_to_set = id_list[i] if id_list else i
-            current_animation_amount = led_status_list[i]
-            current_color_target = led_color_list[i]
-            current_color = strip.getPixelColor(pixel_to_set)
+                if current_animation_amount >= max_animation_amount:  # It passed the animation goal, start de-animating it
+                    # Make it negative to show that it should decrease
+                    led_status_list[i] *= -1
+                    current_color = blend_colors(current_color, current_color_target, speed_to_blend)
+                elif (2 + speed)  > current_animation_amount > max_animation_amount:  # It's animating toward target
+                    current_color = blend_colors(current_color, current_color_target, speed_to_blend)
+                    # Usually increase the brightness towards the target, but sometimes don't
+                    if random.random() < chance_to_increase_brightness:
+                        led_status_list[i] -= random.random()
+                    else:
+                        led_status_list[i] += random.random()
 
-            if current_animation_amount >= max_animation_amount:  # It passed the animation goal, start de-animating it
-                # Make it negative to show that it should decrease
-                led_status_list[i] *= -1
-                current_color = blend_colors(current_color, current_color_target, speed_to_blend)
-            elif 2 > current_animation_amount > max_animation_amount:  # It's animating toward target
-                current_color = blend_colors(current_color, current_color_target, speed_to_blend)
-                # Usually increase the brightness towards the target, but sometimes don't
-                if random.random() < chance_to_increase_brightness:
-                    led_status_list[i] -= random.random()
-                else:
+                    if random.random() < chance_to_change_colors:
+                        led_color_list[i] = new_color
+                elif 0 < current_animation_amount:  # It started animating, don't mess with it
                     led_status_list[i] += random.random()
+                    current_color = blend_colors(current_color, current_color_target, speed_to_blend)
+                elif current_animation_amount == 0:  # It is not animating
+                    # Set it towards the target
+                    if random.random() < (1 ):
+                        led_status_list[i] = max_animation_amount
+                        led_color_list[i] = new_color
+                        current_color = blend_colors(current_color, new_color, speed_to_blend)
+                elif current_animation_amount > (-1 - speed)  :  # It's close enough to 0, end the animation
+                    led_status_list[i] = 0
+                    led_color_list[i] = starting_color
+                    current_color = starting_color
+                else:  # It's negative, so should approach back to 0
+                    # TODO: Something weird is happening here and it's not catching up properly, maybe not set to 0?
+                    led_status_list[i] += random.random()
+                    current_color = blend_colors(current_color, starting_color, speed_to_blend)
 
-                if random.random() < chance_to_change_colors:
-                    led_color_list[i] = new_color
-            elif 0 > current_animation_amount:  # It started animating, don't mess with it
-                led_status_list[i] += random.random()
-                current_color = blend_colors(current_color, current_color_target, speed_to_blend)
-            elif current_animation_amount == 0:  # It is not animating
-                # Set it towards the target
-                if random.random() < chance_to_start_a_twinkle:
-                    led_status_list[i] = max_animation_amount
-                    led_color_list[i] = new_color
-                    current_color = blend_colors(current_color, new_color, speed_to_blend)
-            elif current_animation_amount > -1.5:  # It's close enough to 0, end the animation
-                led_status_list[i] = 0
-                led_color_list[i] = starting_color
-                current_color = blend_colors(current_color, starting_color, .5)
-            else:  # It's negative, so should approach back to 0
-                led_status_list[i] += random.random()
-                current_color = blend_colors(current_color, starting_color, speed_to_blend)
+                strip.setPixelColor(pixel_to_set, current_color)
+            
+            msg = "State [{}]: ".format(starting_color)
+            for i in range(len(led_status_list)):
+                msg += "{:.2f},".format(led_status_list[i])
+                
+            # config.log.info(msg)
 
-            strip.setPixelColor(pixel_to_set, current_color)
+        except AttributeError as e:
+            config.log.warn("Color error:{} - {} - {}. {}".format(current_color, starting_color, new_color, e))
+
 
         iteration += 1
         strip.show()
