@@ -11,15 +11,11 @@ __status__ = "Development"
 
 import platform
 import config
-import random
 import time
-from colour import Color as colour_color
 from itertools import chain
 from math import sin, pi
 from includes import *
 
-
-animation_options = ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking', 'twinkle']
 
 if platform.system() == 'Darwin':
     # This library doesn't import on Macintosh computers, ignore it and use a stub
@@ -74,11 +70,6 @@ def func_color(r, g, b):
     return
 
 
-def valid_animation(anim):
-    return anim in animation_options
-# TODO: Lookup functions to run
-
-
 def func_animation(animation_data):
     """Generic Animation controller, triggers correct animation based on options."""
     animation_config = animation_data.get('command_parsed', {})
@@ -97,7 +88,6 @@ def func_animation(animation_data):
         status = "Starting '{}' animation on strip {} with {} LEDs".format(animation_command, strand, len(id_list))
         config.log.info(status)
 
-        # ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking']
         if animation == 'rainbow':
             rainbow_cycle(light_strip, anim_config=animation_config, id_list=id_list)
         elif animation == 'pulsing':
@@ -128,7 +118,7 @@ def func_clear():
 
 
 # Define functions which animate LEDs in various ways.
-def color_wipe(strip, color, wait_ms=10, start=0, stop=None):
+def color_wipe(strip, color, wait_ms=10):
     """Wipe color across display a pixel at a time."""
     for i in range(strip.numPixels()):
         strip.setPixelColor(i, color)
@@ -149,18 +139,6 @@ def clear(strip):
     for i in range(strip.numPixels()):
         strip.setPixelColor(i, Color(0, 0, 0))
     strip.show()
-
-
-def wheel(pos):
-    """Generate rainbow colors across 0-255 positions."""
-    if pos < 85:
-        return Color(pos * 3, 255 - pos * 3, 0)
-    elif pos < 170:
-        pos -= 85
-        return Color(255 - pos * 3, 0, pos * 3)
-    else:
-        pos -= 170
-        return Color(0, pos * 3, 255 - pos * 3)
 
 
 def rainbow_cycle(strip, anim_config=None, id_list=None):
@@ -325,8 +303,8 @@ def pulse_cycle(strip, anim_config=None, id_list=None):
     wait_ms = remap(1, 6, 80, 2, speed)  # Map speed setting from 1-6 into 2-80ms delay
 
     pulse_height = 100
-    pulse_width = .5  # TODO: Have a way to change pulse width
-    # TODO: Add random color fluctuations, have multiple lightset 'shapes'
+    # TODO: Have a way to change pulse width
+    # TODO: Add random color fluctuations, have multiple light set 'shapes'
 
     # Either loop on all pixels or the range passed in
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
@@ -348,38 +326,10 @@ def pulse_cycle(strip, anim_config=None, id_list=None):
                 strip.setPixelColor(pixel_to_set, color)
                 # pix.append(color_str(color))
             strip.show()
-            # config.log.info("{}: [{} {}] {}".format(iteration, color_str(starting_color), color_str(ending_color), " ".join(pix)))
+            # config.log.info("{}: [{} {}] {}".format(
+            #   iteration, color_str(starting_color), color_str(ending_color), " ".join(pix)))
             # iteration += 1
             time.sleep(wait_ms / 1000.0)
-
-
-def find_ids(ids=None, id_start=None, id_end=None, limit_to=None):
-    if ids and len(ids) > 0:
-        id_list = ids.split(',')
-    else:
-        if id_start == 'NaN':
-            id_start = None
-        if id_end == 'NaN':
-            id_end = None
-
-        if type(id_start) is str and len(id_start):
-            id_start = int(id_start)
-        if type(id_end) is str and len(id_end):
-            id_end = int(id_end)
-
-        if type(id_start) is int and type(id_end) is int:
-            id_list = range(id_start, id_end)
-        else:
-            id_list = []
-
-    id_list = [int(i) for i in id_list]
-
-    if limit_to:
-        for id_num in id_list:
-            if int(id_num) > limit_to:
-                id_list.remove(id_num)
-
-    return id_list
 
 
 def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
@@ -417,7 +367,8 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
             parsed_anim = parse_animation_text(default_anim)
 
             for anim in animations:
-                if anim not in mode_list: mode_list.append(anim)
+                if anim not in mode_list:
+                    mode_list.append(anim)
 
             for led_num in id_list:
                 led = int(led_num)
@@ -449,7 +400,8 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
             led_list[id_data_led] = picked_color
 
             for anim in animations:
-                if anim not in mode_list: mode_list.append(anim)
+                if anim not in mode_list:
+                    mode_list.append(anim)
 
         # config.log.info("- Strand {} - Pixels: {} - color: {}".format(strand_name, ids_data, default_color))
         strand_id += 1
@@ -460,129 +412,6 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
 
         config.animation_modes = mode_list
     return light_data, light_color_data
-
-
-def parse_animation_text(text):
-    animation = None
-    loop_modifier = None
-    loop_speed = None
-    special = None
-    color_list = []
-    variation_list = []  # Color random variations that go with each color
-    extras = []
-
-    # If "off" passed in, field is set to: False, catch that with an if statement
-    if text and len(text) > 3:
-        # Format is 'color word(s)', 'animation', 'modifier', 'speed', 'special'
-        # example: "yellow, pulsing, random" or "red and white, pulsing" or "blue:.1"
-        text = text.strip().lower()
-
-        # Break by commas into named chunks
-        words = text.split(",")
-        color_name = words[0]
-
-        # separate out multiple colors
-        colors_names = color_name.split(' and ')
-        for color_name_split in colors_names:
-            try:
-                # parse out any : after color names for random variations, eg Blue:.1 or Pink:.2:0:.1
-                color_var_split = color_name_split.split(':')
-                variations = []
-                if len(color_var_split) > 1:
-                    variations = color_var_split[1:]
-
-                colour_rgb = colour_color(color_var_split[0])
-                color = Color(int(colour_rgb.red * 255), int(colour_rgb.green * 255), int(colour_rgb.blue * 255))
-                color_list.append(color)
-                variation_list.append(variations)
-            except:
-                config.log.warning(
-                    'Color "{}" not recognized from config.yaml strand animation settings'.format(color_name_split))
-
-        # See if an animation or supporting information was entered
-        if len(words) > 1:
-            for word in words[1:]:
-                text = word.strip().lower()
-                if valid_animation(text):
-                    animation = text
-                elif text in ['random', 'centered', 'cycled']:
-                    loop_modifier = text
-                elif text in ['slow', '1', 1]:
-                    loop_speed = 1
-                elif text in ['gentle', '2', 2]:
-                    loop_speed = 2
-                elif text in ['medium', '3', 3]:
-                    loop_speed = 3
-                elif text in ['speedy', '4', 4]:
-                    loop_speed = 4
-                elif text in ['medium', '5', 5]:
-                    loop_speed = 5
-                elif text in ['fast', '6', 6]:
-                    loop_speed = 6
-                elif ':' in text:
-                    # There is a variable in the text, parse it out
-                    pieces = text.split(":")
-                    if len(pieces) > 1:
-                        var_name = pieces[0]
-                        var_val = pieces[1]
-                        extras.append({var_name: var_val})
-
-    output = {'color_list': color_list, 'color_variations': variation_list, 'special': special,
-              'animation': animation, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed }
-
-    if len(extras):
-        for dic in extras:
-            for key in dic:
-                output[key] = dic[key]
-
-    return output
-
-
-def color_from_list_with_range(parsed_animation):
-    color_list = parsed_animation['color_list']
-    modifier_list = parsed_animation['color_variations']
-
-    if len(color_list):
-        color_number_to_use = random.choice(range(len(color_list)))
-        out_color = color_list[color_number_to_use]
-        out_modifier = modifier_list[color_number_to_use] if len(modifier_list) >= color_number_to_use else []
-
-        if len(out_modifier) > 0:
-            out_color = random_color_range(out_color, out_modifier)
-    else:
-        out_color = 0
-
-    return out_color
-
-
-def random_color_range(color, ranges):
-    # Start with a Color, then return another color close to it based on percentages in 'ranges'.
-    # example: "Color(120, 100, 100), [.1]" or "Color(120, 100, 100), [.2,0,.2]"
-    ranges = ranges or []
-    range_r = range_g = range_b = 0
-    if len(ranges) > 2:
-        range_b = ranges[2]
-    if len(ranges) > 1:
-        range_g = ranges[1]
-    if len(ranges) > 0:
-        range_r = ranges[0]
-    if len(ranges) == 1:
-        range_g = range_r
-        range_b = range_r
-
-    range_r = int(float(range_r) * 255)
-    range_g = int(float(range_g) * 255)
-    range_b = int(float(range_b) * 255)
-
-    r = color.r
-    g = color.g
-    b = color.b
-
-    new_r = clamp(random.randint(r - range_r, r + range_r), 0, 255)
-    new_g = clamp(random.randint(g - range_g, g + range_g), 0, 255)
-    new_b = clamp(random.randint(b - range_b, b + range_b), 0, 255)
-
-    return Color(new_r, new_g, new_b)
 
 
 # Not Used:
