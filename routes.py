@@ -104,11 +104,15 @@ def add_animation_view():
     strand = request.args.get('strand', None)
     animation = request.args.get('animation', 'rainbow')
     color = request.args.get('color', None)
+    density = request.args.get('density', None)
     modifier = request.args.get('modifier', None)
     speed = request.args.get('speed', None)
 
     # TODO: Parse through parse_animation_text to clean up inputs
     animation_text = "{}, {}, {}, {}".format(color, animation, modifier, speed)
+    if density:
+        animation_text += ', density:{}'.format(density)
+
     animation_data = parse_animation_text(animation_text)
 
     valid_data = (type(strand) == str or type(strand) == int) and int(strand) < len(config.light_strips)

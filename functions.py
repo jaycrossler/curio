@@ -18,7 +18,8 @@ from itertools import chain
 from math import sin, pi
 from includes import *
 
-animation_options = ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking']
+
+animation_options = ['rainbow', 'wheel', 'pulsing', 'warp', 'blinkenlicht', 'blinking', 'twinkle']
 
 if platform.system() == 'Darwin':
     # This library doesn't import on Macintosh computers, ignore it and use a stub
@@ -101,6 +102,10 @@ def func_animation(animation_data):
             rainbow_cycle(light_strip, anim_config=animation_config, id_list=id_list)
         elif animation == 'pulsing':
             pulse_cycle(light_strip, anim_config=animation_config, id_list=id_list)
+        elif animation == 'blinking':
+            blink_cycle(light_strip, anim_config=animation_config, id_list=id_list)
+        elif animation == 'twinkle':
+            twinkle_cycle(light_strip, anim_config=animation_config, id_list=id_list)
 
         else:
             # TODO: Add more
@@ -175,14 +180,129 @@ def rainbow_cycle(strip, anim_config=None, id_list=None):
                     pixel_to_set = id_list[i] if id_list else i
                     color = wheel((int(i * 256 / pixels_to_loop_on) + j) & 255)
                     strip.setPixelColor(pixel_to_set, color)
-                    #config.log.info("Setting {} to {}".format(pixel_to_set, color))
                 except IndexError:
                     config.log.warn("IndexError using {} when numPixels is {} and"
                                     " length of leds is {}".format(i, strip.numPixels(), len(strip.leds)))
-            #config.log.info("Loop {}".format(j))
 
             strip.show()
             time.sleep(wait_ms)
+
+
+def twinkle_cycle(strip, anim_config=None, id_list=None):
+    """Twinkle pixels through each color in list """
+
+    if anim_config is None:
+        anim_config = {}
+
+    # Get colors, and add two yellows if no colors given
+    provided_colors = anim_config.get('color_list', [])
+    if len(provided_colors) < 1:
+        provided_colors.append(Color(255, 232, 153))
+    if len(provided_colors) < 2:
+        provided_colors.append(Color(247, 218, 76))
+
+    speed = anim_config.get('loop_speed', 3)
+    wait_ms = remap(1, 6, 100, 10, speed)  # Map speed setting from 1-6
+
+    # TODO: Decide if these should be variables
+    max_animation_amount = 10  # Should be greater than 2 at least
+    chance_to_increase_brightness = .05
+    chance_to_change_colors = .05
+    chance_to_start_a_twinkle = float(anim_config.get('density', .3))
+    speed_to_blend = .3
+    starting_color = Color(0, 0, 0)
+
+    # Either loop on all pixels or the range passed in
+    pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
+
+    # Have a list for each pixel to show what percentage it's animated and color
+    led_status_list = []
+    led_color_list = []
+    for i in range(pixels_to_loop_on):
+        led_status_list.append(0)
+        led_color_list.append(0)
+        # set all pixels to starting color
+        pixel_to_set = id_list[i] if id_list else i
+        strip.setPixelColor(pixel_to_set, starting_color)
+
+    iteration = 0
+    while True:
+        # Loop through each pixel and randomly blend it towards a target color
+        new_color = provided_colors[iteration % len(provided_colors)]
+
+        for i in range(pixels_to_loop_on):
+            pixel_to_set = id_list[i] if id_list else i
+            current_animation_amount = led_status_list[i]
+            current_color_target = led_color_list[i]
+            current_color = strip.getPixelColor(pixel_to_set)
+
+            if current_animation_amount >= max_animation_amount:  # It passed the animation goal, start de-animating it
+                # Make it negative to show that it should decrease
+                led_status_list[i] *= -1
+                current_color = blend_colors(current_color, current_color_target, speed_to_blend)
+            elif 2 > current_animation_amount > max_animation_amount:  # It's animating toward target
+                current_color = blend_colors(current_color, current_color_target, speed_to_blend)
+                # Usually increase the brightness towards the target, but sometimes don't
+                if random.random() < chance_to_increase_brightness:
+                    led_status_list[i] -= random.random()
+                else:
+                    led_status_list[i] += random.random()
+
+                if random.random() < chance_to_change_colors:
+                    led_color_list[i] = new_color
+            elif 0 > current_animation_amount:  # It started animating, don't mess with it
+                led_status_list[i] += random.random()
+                current_color = blend_colors(current_color, current_color_target, speed_to_blend)
+            elif current_animation_amount == 0:  # It is not animating
+                # Set it towards the target
+                if random.random() < chance_to_start_a_twinkle:
+                    led_status_list[i] = max_animation_amount
+                    led_color_list[i] = new_color
+                    current_color = blend_colors(current_color, new_color, speed_to_blend)
+            elif current_animation_amount > -1.5:  # It's close enough to 0, end the animation
+                led_status_list[i] = 0
+                led_color_list[i] = starting_color
+                current_color = blend_colors(current_color, starting_color, .5)
+            else:  # It's negative, so should approach back to 0
+                led_status_list[i] += random.random()
+                current_color = blend_colors(current_color, starting_color, speed_to_blend)
+
+            strip.setPixelColor(pixel_to_set, current_color)
+
+        iteration += 1
+        strip.show()
+        time.sleep(wait_ms / 1000.0)
+
+
+def blink_cycle(strip, anim_config=None, id_list=None):
+    """blink pixels repeatedly through each color in list """
+
+    if anim_config is None:
+        anim_config = {}
+
+    # Get colors, and add white and black if none listed
+    provided_colors = anim_config.get('color_list', [])
+    if len(provided_colors) < 1:
+        provided_colors.append(Color(255, 255, 255))
+    if len(provided_colors) < 2:
+        provided_colors.append(Color(0, 0, 0))
+
+    speed = anim_config.get('loop_speed', 3)
+    wait_ms = remap(1, 6, 2000, 100, speed)  # Map speed setting from 1-6
+
+    # Either loop on all pixels or the range passed in
+    pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
+
+    iteration = 0
+    while True:
+        current_color = provided_colors[iteration % len(provided_colors)]
+
+        for i in range(pixels_to_loop_on):
+            pixel_to_set = id_list[i] if id_list else i
+            strip.setPixelColor(pixel_to_set, current_color)
+        iteration += 1
+        strip.show()
+        time.sleep(wait_ms / 1000.0)
 
 
 def pulse_cycle(strip, anim_config=None, id_list=None):
@@ -202,11 +322,11 @@ def pulse_cycle(strip, anim_config=None, id_list=None):
         starting_color = provided_colors[0]
 
     speed = anim_config.get('loop_speed', 3)
-    wait_ms = remap(1, 6, 80, 2, speed)
-    #config.log.info("PULSE SPEED {} MS DELAY from {}".format(wait_ms, anim_config))
+    wait_ms = remap(1, 6, 80, 2, speed)  # Map speed setting from 1-6 into 2-80ms delay
 
     pulse_height = 100
     pulse_width = .5  # TODO: Have a way to change pulse width
+    # TODO: Add random color fluctuations, have multiple lightset 'shapes'
 
     # Either loop on all pixels or the range passed in
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
@@ -349,6 +469,7 @@ def parse_animation_text(text):
     special = None
     color_list = []
     variation_list = []  # Color random variations that go with each color
+    extras = []
 
     # If "off" passed in, field is set to: False, catch that with an if statement
     if text and len(text) > 3:
@@ -384,23 +505,37 @@ def parse_animation_text(text):
                 text = word.strip().lower()
                 if valid_animation(text):
                     animation = text
-                if text in ['random', 'centered', 'cycled']:
+                elif text in ['random', 'centered', 'cycled']:
                     loop_modifier = text
-                if text in ['slow', '1', 1]:
+                elif text in ['slow', '1', 1]:
                     loop_speed = 1
-                if text in ['gentle', '2', 2]:
+                elif text in ['gentle', '2', 2]:
                     loop_speed = 2
-                if text in ['medium', '3', 3]:
+                elif text in ['medium', '3', 3]:
                     loop_speed = 3
-                if text in ['speedy', '4', 4]:
+                elif text in ['speedy', '4', 4]:
                     loop_speed = 4
-                if text in ['medium', '5', 5]:
+                elif text in ['medium', '5', 5]:
                     loop_speed = 5
-                if text in ['fast', '6', 6]:
+                elif text in ['fast', '6', 6]:
                     loop_speed = 6
+                elif ':' in text:
+                    # There is a variable in the text, parse it out
+                    pieces = text.split(":")
+                    if len(pieces) > 1:
+                        var_name = pieces[0]
+                        var_val = pieces[1]
+                        extras.append({var_name: var_val})
 
-    return {'color_list': color_list, 'color_variations': variation_list, 'special': special,
-            'animation': animation, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed }
+    output = {'color_list': color_list, 'color_variations': variation_list, 'special': special,
+              'animation': animation, 'loop_modifier': loop_modifier, 'loop_speed': loop_speed }
+
+    if len(extras):
+        for dic in extras:
+            for key in dic:
+                output[key] = dic[key]
+
+    return output
 
 
 def color_from_list_with_range(parsed_animation):

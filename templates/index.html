@@ -88,6 +88,7 @@
       <option value="warp">Warp</option>
       <option value="blinking">Blinking</option>
       <option value="blinkenlicht">Blinkenlicht</option>
+      <option value="twinkle">Twinkle</option>
     </select>
   </div>
 
@@ -96,13 +97,26 @@
     <input type="text" id="animationColor" placeholder="blue" title="Color(s) if animation needs it with colons for variance - 'blue' or '#f00:.2' or '#cafeba' or 'purple and blue:.2'">
   </div>
 
+<!--  <div class="col-12" style="display:inline">-->
+<!--    <label class="col-sm col-form-label col-form-label-sm" for="animationModifiers">Modifiers</label>-->
+<!--    <select id="animationModifiers">-->
+<!--      <option value="" selected></option>-->
+<!--      <option value="random" selected>Random</option>-->
+<!--      <option value="centered">Centered</option>-->
+<!--      <option value="cycled">Cycled</option>-->
+<!--    </select>-->
+<!--  </div>-->
+
   <div class="col-12" style="display:inline">
-    <label class="col-sm col-form-label col-form-label-sm" for="animationModifiers">Modifiers</label>
-    <select id="animationModifiers">
-      <option value="" selected></option>
-      <option value="random" selected>Random</option>
-      <option value="centered">Centered</option>
-      <option value="cycled">Cycled</option>
+    <label class="col-sm col-form-label col-form-label-sm" for="animationDensity">Density</label>
+    <select id="animationDensity">
+      <option value="0.1">10%</option>
+      <option value="0.2">20%</option>
+      <option value="0.3" selected>30% regular</option>
+      <option value="0.4">40%</option>
+      <option value="0.5">50%</option>
+      <option value="0.6">60%</option>
+      <option value="0.7">70%</option>
     </select>
   </div>
 
@@ -117,6 +131,8 @@
       <option value="6">6: Fast</option>
     </select>
   </div>
+
+
 
   <div class="col-12" style="display:inline">
     <label class="col-sm col-form-label col-form-label-sm" for="specificSizeInputIDStart">Starting LED</label>

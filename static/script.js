@@ -224,6 +224,7 @@ function setupIndexPage() {
                 'animation': $('#inlineFormSelectAnim').val(),
                 'strand': parseInt($('#inlineFormSelectStrand').val()),
                 'color': $('#animationColor').val(),
+                'density': $('#animationDensity').val(),
                 'modifier': $('#animationModifiers').val(),
                 'speed': parseInt($('#animationSpeed').val()),
                 'ids': $('#specificSizeInputIDs').val(),

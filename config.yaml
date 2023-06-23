@@ -35,9 +35,9 @@ strands:
         group: weapons
         animations:
           default: off
-          engage: royalblue, pulsing
+          engage: orange, pulsing
           stealth: off
-          landing: off
+          landing: royalblue
           combat: red, pulsing
 
     id_ranges:
@@ -75,8 +75,8 @@ strands:
         id_start: 0
         id_end: 90
         animations:
-          default: '#40e0d0:.1, pulsing, random, gentle'
-          engage: #40e0d0:.3, warp
+          default: black
+          engage: '#40e0d0:.1, pulsing, random, gentle'
           stealth: gray:.1
           landing: teal:.2, pulsing, gentle
-          combat: red:.3, pulsing
+          combat: red:.3, warp
