@@ -1,5 +1,6 @@
 var status_check_timer;
 var mqtt_status_color = 'black';
+var server_status_color = 'green';
 
 // TODO: Either convert everything to jQuery or to straight JS, not a mix
 // TODO: Clean up formatting, turn into a class to reduce technical debt
@@ -269,71 +270,92 @@ function check_state() {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', '/state');
 
-        xhr.onload = function () {
-            // Check if we got 'true' as a response
-            if (xhr.status == 200) {
-                state = JSON.parse(xhr.responseText)
-
-                // Set MQTT light state
-                if (state.mqtt_status == 'connected') {
-                    mqtt_status_color = 'green';
-                } else if (state.mqtt_status == 'disconnected') {
-                    mqtt_status_color = 'red';
-                } else if (state.mqtt_status == 'not initialized') {
-                    mqtt_status_color = 'black';
-                }
-
-                var anim_modes_from_xhr = state.modes;
-                if (animation_modes.length != anim_modes_from_xhr.length) {
-                    animation_modes = anim_modes_from_xhr;
-                    //Likely the list of modes changed, rebuild the drop down
-                    var $picker = $('.dropdownModeButton');
-                    $picker.empty(); //children().remove();
-                    for (mode in anim_modes_from_xhr) {
-                        mode_name = anim_modes_from_xhr[mode]
-                        $picker.append(
-                            $('<option/>')
-                                .attr('value', mode_name).text(toTitleCase(mode_name)));
-                    }
-
-                    //Also rebuild common settings
-                    var $picker = $('#inlineFormSelectStrand');
-                    $picker.empty();
-                    var i=0;
-                    for (strand in state.strands) {
-                        strand_name = state.strands[strand].strand_name;
-                        leds = state.strands[strand].strand_info.size;
-                        strand_text = 'Strand ' + i + ' - ' + leds + ' LEDs';
-                        $picker.append(
-                            $('<option/>')
-                                .attr('title', strand_name)
-                                .attr('value', i).text(toTitleCase(strand_text)));
-                        i++;
-                    }
-
-                }
-                set_animation_list(state);
-
-                set_light_status(state.strands);
+        try{
+            xhr.onerror = function() {
+              if (xhr.readyState == 4 && xhr.status == 0) {
+                server_status_color = 'red'
+                if (mqtt_status_color == 'green') mqtt_status_color = 'red';
+              }
             }
-        };
-        try {
+
+            xhr.onload = function () {
+                // Check if we got 'true' as a response
+                if (xhr.status == 200) {
+                    state = JSON.parse(xhr.responseText)
+                    server_status_color = 'green';
+
+                    // Set MQTT light state
+                    if (state.mqtt_status == 'connected') {
+                        mqtt_status_color = 'green';
+                    } else if (state.mqtt_status == 'disconnected') {
+                        mqtt_status_color = 'red';
+                    } else if (state.mqtt_status == 'not initialized') {
+                        mqtt_status_color = 'black';
+                    }
+
+                    var anim_modes_from_xhr = state.modes;
+                    if (animation_modes.length != anim_modes_from_xhr.length) {
+                        animation_modes = anim_modes_from_xhr;
+                        //Likely the list of modes changed, rebuild the drop down
+                        var $picker = $('.dropdownModeButton');
+                        $picker.empty(); //children().remove();
+                        for (mode in anim_modes_from_xhr) {
+                            mode_name = anim_modes_from_xhr[mode]
+                            $picker.append(
+                                $('<option/>')
+                                    .attr('value', mode_name).text(toTitleCase(mode_name)));
+                        }
+
+                        //Also rebuild common settings
+                        var $picker = $('#inlineFormSelectStrand');
+                        $picker.empty();
+                        var i=0;
+                        for (strand in state.strands) {
+                            strand_name = state.strands[strand].strand_name;
+                            leds = state.strands[strand].strand_info.size;
+                            strand_text = 'Strand ' + i + ' - ' + leds + ' LEDs';
+                            $picker.append(
+                                $('<option/>')
+                                    .attr('title', strand_name)
+                                    .attr('value', i).text(toTitleCase(strand_text)));
+                            i++;
+                        }
+
+                    }
+                    set_animation_list(state);
+
+                    set_light_status(state.strands);
+                }
+            };
             xhr.send();
+
         } catch (e) {
-            console.log(e)
-            mqtt_status_connected = false;
+            server_status_color = 'red';
+            if (mqtt_status_color == 'green') mqtt_status_color = 'red';
         }
+
     }
 
     //If it's 'not initialized', stop checking
-    document.getElementById('mqtt_status').style.color = mqtt_status_color;
+    var mqtt_status = document.getElementById('mqtt_status');
+    var server_status = document.getElementById('server_status');
+    mqtt_status.style.color = mqtt_status_color;
     if (mqtt_status_color=='black'){
-        document.getElementById('mqtt_status').title = 'MQTT Connection Never Initialized';
+        mqtt_status.title = 'MQTT Connection Never Initialized';
     } else if (mqtt_status_color=='green') {
-        document.getElementById('mqtt_status').title = 'MQTT Connected and listening';
+        mqtt_status.title = 'MQTT Connected and listening';
     } else if (mqtt_status_color=='red') {
-        document.getElementById('mqtt_status').title = 'MQTT Disconnected';
+        mqtt_status.title = 'MQTT Disconnected';
     }
+    server_status.style.color = server_status_color;
+    if (server_status_color=='black'){
+        server_status.title = 'Server Connection Broken';
+    } else if (server_status_color=='green') {
+        server_status.title = 'Server Connected and listening';
+    } else if (server_status_color=='red') {
+        server_status.title = 'Server Disconnected';
+    }
+
     status_check_timer = setTimeout(check_state, 5000);
 }
 
