@@ -187,6 +187,8 @@ def parse_animation_text(text):
         # Break by commas into named chunks
         words = text.split(",")
         color_name = words[0]
+        if color_name == 'none':
+            color_name = 'blue'
 
         # separate out multiple colors
         colors_names = color_name.split(' and ')
@@ -270,9 +272,17 @@ def color_from_list_with_range(parsed_animation):
     return out_color
 
 
+def random_color_with_range_from_list(colors, variations, default_variation=.2):
+    color_i = random.randint(0, len(colors) - 1)
+    color_range = variations[color_i] if len(variations) > color_i else [default_variation]
+    return random_color_range(colors[color_i], color_range)
+
+
 def random_color_range(color, ranges):
     # Start with a Color, then return another color close to it based on percentages in 'ranges'.
     # example: "Color(120, 100, 100), [.1]" or "Color(120, 100, 100), [.2,0,.2]"
+    if type(ranges) == float:
+        ranges = [ranges]
     ranges = ranges or []
     range_r = range_g = range_b = 0
     if len(ranges) > 2:

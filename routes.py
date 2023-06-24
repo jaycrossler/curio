@@ -125,7 +125,7 @@ def add_animation_view():
         id_end = request.args.get('id_end', light_strip.numPixels())
         id_list = find_ids(ids, id_start, id_end, limit_to=light_strip.numPixels())
         if strand and len(id_list):
-            msg = "Animation {} on strip {} for {} lights".format(animation, strand, len(id_list))
+            msg = "Animation {} on strip {} for {} lights, options: ".format(animation, strand, len(id_list), animation_text)
             start_new_animation(msg)
 
             animation_data = merge_dictionaries(
@@ -137,7 +137,7 @@ def add_animation_view():
             msg = "Animation {} requested but no lights given".format(animation)
 
     else:
-        msg = "Animation {} on {} strips total".format(animation, len(config.light_strips))
+        msg = "Animation {} on {} strips total, options: {}".format(animation, len(config.light_strips), animation_text)
         start_new_animation(msg)
         for light_strip in config.light_strips:
             start_process(func_animation, msg, {'strip': light_strip})

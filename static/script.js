@@ -234,9 +234,10 @@ function setupIndexPage() {
             }
 
             for (let k in data) {
-                if (Number.isNaN(data[k]) || data[k]==="") {
+                if (Number.isNaN(data[k]) || data[k]==="" || typeof data[k]==='undefined') {
                     delete data[k]
                 }
+
             }
 
             var url = "/animation?" + $.param(data);
@@ -244,12 +245,12 @@ function setupIndexPage() {
                 type: "GET",
                 url: url,
                 success: function(data) {
+                    document.getElementById("status").innerHTML = "URL: '" + url + "'<br/>Status: " + data;
                     console.log(data);
                 },
                 error: function(data) {
-
-                    // Some error in ajax call
-                    console.log("some Error");
+                    document.getElementById("status").innerHTML = "URL: '" + url + "'<br/>ERROR: " + data;
+                    console.log("Error - " + this.data);
                 }
             });
 
