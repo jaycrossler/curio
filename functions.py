@@ -183,14 +183,14 @@ def twinkle_cycle(strip, anim_config=None, id_list=None):
         provided_colors.append(Color(247, 218, 76))
 
     speed = anim_config.get('loop_speed', 3)
-    wait_ms = remap(1, 6, 200, 30, speed)  # Map speed setting from 1-6
+    wait_ms = remap(1, 6, 100, 5, speed)  # Map speed setting from 1-6
 
-    max_animation_amount = 2 + (2 * speed)  # Should be greater than 2 at least
+    max_animation_amount = 2 + (5 * speed)  # Should be greater than 2 at least
     chance_to_increase_brightness = .05
     chance_to_change_colors = .05
     chance_to_start_a_twinkle = float(anim_config.get('density', .3))
-    speed_to_blend = 1 / max_animation_amount
-    twinkle_variance = .4
+    speed_to_blend = .05
+    twinkle_variance = .2
 
     # Either loop on all pixels or the range passed in
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
@@ -240,11 +240,11 @@ def twinkle_cycle(strip, anim_config=None, id_list=None):
                     current_color = blend_colors(current_color, current_color_target, speed_to_blend)
                 elif current_animation_amount == 0:  # It is not animating
                     # Set it towards the target
-                    if random.random() < chance_to_start_a_twinkle:
+                    if random.random() < (chance_to_start_a_twinkle * chance_to_start_a_twinkle):
                         led_status_list[i] += random.random()
                         new_color = random_color_range(current_color, twinkle_variance)
                         led_color_list[i] = new_color
-                        current_color = blend_colors(current_color, new_color, speed_to_blend)
+                        current_color = Color(255, 255, 255)
                 elif current_animation_amount > (-1 - speed/2):  # It's close enough to 0, end the animation
                     led_status_list[i] = 0
                     current_color = current_color_target
@@ -282,14 +282,14 @@ def blinkenlicht_cycle(strip, anim_config=None, id_list=None):
         provided_colors.append(Color(247, 218, 76))
 
     speed = anim_config.get('loop_speed', 3)
-    wait_ms = remap(1, 6, 200, 30, speed)  # Map speed setting from 1-6
+    wait_ms = remap(1, 6, 100, 10, speed)  # Map speed setting from 1-6
 
     # TODO: Decide if these should be variables
     max_animation_amount = 2 + (5 * speed)  # Should be greater than 2 at least
     chance_to_increase_brightness = .05
     chance_to_change_colors = .05
     chance_to_start_a_twinkle = float(anim_config.get('density', .3))
-    speed_to_blend = 1 / max_animation_amount
+    speed_to_blend = .05
     starting_color = provided_colors[0]
 
     # Either loop on all pixels or the range passed in
@@ -337,7 +337,7 @@ def blinkenlicht_cycle(strip, anim_config=None, id_list=None):
                     current_color = blend_colors(current_color, current_color_target, speed_to_blend)
                 elif current_animation_amount == 0:  # It is not animating
                     # Set it towards the target
-                    if random.random() < chance_to_start_a_twinkle:
+                    if random.random() < (chance_to_start_a_twinkle * chance_to_start_a_twinkle):
                         led_status_list[i] += random.random()
                         led_color_list[i] = new_color
                         current_color = blend_colors(current_color, new_color, speed_to_blend)
