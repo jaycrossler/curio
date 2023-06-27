@@ -6,7 +6,6 @@ from includes import merge_dictionaries
 # Configuration Variables that are accessed by other scripts
 light_strips = []
 light_data = []
-light_color_data = []
 animation_modes = []
 current_mode = 'default'
 settings = {}
@@ -50,19 +49,3 @@ def setting(name, default_if_blank=None):
             return default_if_blank
         else:
             log.error('SETTING MISSING: {}'.format(name))
-
-
-# TODO: This is an experiment to see if we can keep a DB of colors
-def set_color(strip, pixel, color):
-    global light_color_data
-    if strip in light_color_data:
-        if pixel in light_color_data[strip]:
-            light_color_data[strip][pixel] = color
-
-
-def get_color(strip, pixel):
-    color = 0
-    if strip in light_color_data:
-        if pixel in light_color_data[strip]:
-            color = light_color_data[strip][pixel]
-    return color

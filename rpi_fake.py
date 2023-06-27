@@ -3,10 +3,7 @@
 """
 Methods to call light effect functions - but stubbed out so that all functions work on a macintosh
 """
-import config
 from includes import RGBW, Color
-
-times_set = 0
 
 
 class PixelStrip:
@@ -50,30 +47,10 @@ class PixelStrip:
 
     def setPixelColor(self, n, color):
         self.leds[n] = color
-        self.setColorInDB(n, color)
 
     def setPixelColorRGB(self, n, red, green, blue, white=0):
         color = Color(red, green, blue)
         self.leds[n] = color
-        global times_set
-        times_set += 1
-        self.setColorInDB(n, color)
-
-    def setColorInDB(self, n, color):
-        global times_set
-        times_set += 1
-        if times_set % 100 == 0:
-            for i in range(self.numPixels()):
-                # Use CurrentStrip, or find the strip number if not set
-                # TODO: Improve this way of looking up strip, maybe on init?
-                if isinstance(self.current_strip, type(None)):
-                    j = 0
-                    for s in config.light_strips:
-                        if s == self:
-                            self.current_strip = j
-                        j += 1
-
-                config.set_color(self.current_strip, n, color)
 
     def getBrightness(self):
         return self.brightness

@@ -90,6 +90,8 @@ def func_animation(animation_data):
 
         if animation == 'rainbow':
             rainbow_cycle(light_strip, anim_config=animation_config, id_list=id_list)
+        elif animation == 'warp':
+            warp_cycle(light_strip, anim_config=animation_config, id_list=id_list)
         elif animation == 'pulsing':
             pulse_cycle(light_strip, anim_config=animation_config, id_list=id_list)
         elif animation == 'blinking':
@@ -284,6 +286,8 @@ def blinkenlicht_cycle(strip, anim_config=None, id_list=None):
     speed = anim_config.get('loop_speed', 3)
     wait_ms = remap(1, 6, 100, 10, speed)  # Map speed setting from 1-6
 
+    mode = anim_config.get('mode', 'linear')
+
     # TODO: Decide if these should be variables
     max_animation_amount = 2 + (5 * speed)  # Should be greater than 2 at least
     chance_to_increase_brightness = .05
@@ -311,6 +315,7 @@ def blinkenlicht_cycle(strip, anim_config=None, id_list=None):
         new_color = random_color_with_range_from_list(provided_colors, color_variations, default_variation=.2)
         current_color = "unset"
 
+        # A "state machine" represented by a float for each light, with lights changing behavior based on number
         try:
             for i in range(pixels_to_loop_on):
                 pixel_to_set = id_list[i] if id_list else i
@@ -323,15 +328,19 @@ def blinkenlicht_cycle(strip, anim_config=None, id_list=None):
                     led_status_list[i] *= -1
                     current_color = blend_colors(current_color, current_color_target, speed_to_blend)
                 elif (2 + speed) < current_animation_amount < max_animation_amount:  # It's animating toward target
-                    current_color = blend_colors(current_color, current_color_target, speed_to_blend)
-                    # Usually increase the brightness towards the target, but sometimes don't
-                    if random.random() < chance_to_increase_brightness:
-                        led_status_list[i] /= 2
-                    else:
+                    if mode == 'linear':
                         led_status_list[i] += random.random()
+                        current_color = blend_colors(current_color, current_color_target, speed_to_blend)
+                    else:
+                        current_color = blend_colors(current_color, current_color_target, speed_to_blend)
+                        # Usually increase the brightness towards the target, but sometimes don't
+                        if random.random() < chance_to_increase_brightness:
+                            led_status_list[i] /= 2
+                        else:
+                            led_status_list[i] += random.random()
 
-                    if random.random() < chance_to_change_colors:
-                        led_color_list[i] = new_color
+                        if random.random() < chance_to_change_colors:
+                            led_color_list[i] = new_color
                 elif 0 < current_animation_amount:  # It started animating, don't mess with it
                     led_status_list[i] += random.random()
                     current_color = blend_colors(current_color, current_color_target, speed_to_blend)
@@ -346,7 +355,6 @@ def blinkenlicht_cycle(strip, anim_config=None, id_list=None):
                     led_color_list[i] = starting_color
                     current_color = starting_color
                 else:  # It's negative, so should approach back to 0
-                    # TODO: See if the change above fixes animation
                     led_status_list[i] += random.random()
                     current_color = blend_colors(current_color, starting_color, speed_to_blend)
 
@@ -396,7 +404,7 @@ def blink_cycle(strip, anim_config=None, id_list=None):
         time.sleep(wait_ms / 1000.0)
 
 
-def pulse_cycle(strip, anim_config=None, id_list=None):
+def warp_cycle(strip, anim_config=None, id_list=None):
     """Pulse pixels repeatedly in a sine wave pattern where the center moves towards
      ending_color and back repeatedly """
 
@@ -445,12 +453,60 @@ def pulse_cycle(strip, anim_config=None, id_list=None):
             time.sleep(wait_ms / 1000.0)
 
 
+def pulse_cycle(strip, anim_config=None, id_list=None):
+    """Pulse pixels repeatedly in a sine wave pattern where the center moves towards
+     ending_color and back repeatedly """
+
+    if anim_config is None:
+        anim_config = {}
+
+    # Use first two colors passed in or go from blue to white
+    starting_color = Color(0, 0, 0)
+    ending_color = Color(255, 255, 255)
+    provided_colors = anim_config.get('color_list', [])
+    if len(provided_colors) > 1:
+        ending_color = provided_colors[1]
+    if len(provided_colors) > 0:
+        starting_color = provided_colors[0]
+
+    speed = anim_config.get('loop_speed', 3)
+    mode = anim_config.get('mode', 'linear')
+    wait_ms = remap(1, 6, 200, 50, speed)  # Map speed setting from 1-6 into expected delay
+    pulse_height = 100
+
+    # Either loop on all pixels or the range passed in
+    pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
+
+    while True:
+        # Go from 0 to pulse_height back down to 0
+        for height_of_pulse in chain(range(0, pulse_height), range(pulse_height, 0, -1)):
+
+            height = height_of_pulse / pulse_height
+            if mode == 'sin':
+                height = .5 * (1 + sin((1.5 + height) * pi))
+            elif mode == 'spike':
+                regular_sin = .5 * (1 + sin((2 * pi * height) + (1.5 * pi)))  # maps to 0..1/0..1
+                height = 2 - (regular_sin**-2)  # make it thinner and spikey, then only take if positive
+                if height < 0:
+                    height = 0
+            elif mode == 'linear':
+                pass  # use base height
+
+            color = blend_colors(starting_color, ending_color, height)
+
+            for i in range(pixels_to_loop_on):
+                pixel_to_set = id_list[i] if id_list else i
+                strip.setPixelColor(pixel_to_set, color)
+            strip.show()
+
+            time.sleep(wait_ms / 1000.0)
+
+
 def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
     # Expects that light strips have been configured, then sets starting colors and animations
     if not strands_config:
         strands_config = config.settings.get('strands')
     light_data = []
-    light_color_data = []
     mode_list = []
     
     strand_id = 0
@@ -462,10 +518,8 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
         id_ranges_data = data.get('id_ranges', [])
 
         led_database = []
-        led_list = []
         for i in range(strand.numPixels()):
             led_database.append({})
-            led_list.append(0)
 
         for id_range_data_name in id_ranges_data:
             id_range_data = id_ranges_data.get(id_range_data_name)
@@ -492,7 +546,6 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
                     led_database[led] = {
                         'id': led, 'color': picked_color, 'name': id_range_data_name, 'anim_text': default_anim
                     }
-                    led_list[led] = picked_color
                     # config.log.info("- Strand {} - Pixel {} - color: {}".format(strand_name, led, default_color))
                 else:
                     config.log.warning('Invalid led animation config: strand {} {}'.format(id_range_data_name, led))
@@ -510,7 +563,6 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
             led_database[id_data_led] = {
                 'id': id_data_led, 'color': picked_color, 'name': id_name, 'anim_text': default_anim
             }
-            led_list[id_data_led] = picked_color
 
             for anim in animations:
                 if anim not in mode_list:
@@ -521,10 +573,9 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
         if set_lights_on:
             strand.show()
         light_data.append(led_database)
-        light_color_data.append(led_list)
 
         config.animation_modes = mode_list
-    return light_data, light_color_data
+    return light_data
 
 
 # Not Used:
