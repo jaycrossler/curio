@@ -293,7 +293,7 @@ def blinkenlicht_cycle(strip, anim_config=None, id_list=None):
     chance_to_increase_brightness = .05
     chance_to_change_colors = .05
     chance_to_start_a_twinkle = float(anim_config.get('density', .3))
-    speed_to_blend = .05
+    speed_to_blend = 2 / max_animation_amount
     starting_color = provided_colors[0]
 
     # Either loop on all pixels or the range passed in
@@ -423,7 +423,7 @@ def warp_cycle(strip, anim_config=None, id_list=None):
     speed = anim_config.get('loop_speed', 3)
     wait_ms = remap(1, 6, 80, 2, speed)  # Map speed setting from 1-6 into 2-80ms delay
 
-    pulse_height = 100
+    pulse_height = 50
     # TODO: Have a way to change pulse width
     # TODO: Add random color fluctuations, have multiple light set 'shapes'
 
@@ -471,13 +471,17 @@ def pulse_cycle(strip, anim_config=None, id_list=None):
 
     speed = anim_config.get('loop_speed', 3)
     mode = anim_config.get('mode', 'linear')
-    wait_ms = remap(1, 6, 200, 50, speed)  # Map speed setting from 1-6 into expected delay
-    pulse_height = 100
+    wait_ms = remap(1, 6, 50, 1, speed)  # Map speed setting from 1-6 into expected delay
+    pulse_height = 50
 
     # Either loop on all pixels or the range passed in
     pixels_to_loop_on = len(id_list) if id_list else strip.numPixels()
 
+    iteration = 0
     while True:
+        if len(provided_colors) > 1:
+            ending_color = provided_colors[(iteration+1) % len(provided_colors)]
+        
         # Go from 0 to pulse_height back down to 0
         for height_of_pulse in chain(range(0, pulse_height), range(pulse_height, 0, -1)):
 
@@ -486,7 +490,10 @@ def pulse_cycle(strip, anim_config=None, id_list=None):
                 height = .5 * (1 + sin((1.5 + height) * pi))
             elif mode == 'spike':
                 regular_sin = .5 * (1 + sin((2 * pi * height) + (1.5 * pi)))  # maps to 0..1/0..1
-                height = 2 - (regular_sin**-2)  # make it thinner and spikey, then only take if positive
+                if regular_sin > 0:
+                    regular_sin = (regular_sin**-2) 
+                    #TODO: Spikes, but has some weird side values
+                height = 2 - regular_sin # make it thinner and spikey, then only take if positive
                 if height < 0:
                     height = 0
             elif mode == 'linear':
@@ -500,6 +507,7 @@ def pulse_cycle(strip, anim_config=None, id_list=None):
             strip.show()
 
             time.sleep(wait_ms / 1000.0)
+        iteration += 1
 
 
 def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
