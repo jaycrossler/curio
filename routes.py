@@ -7,22 +7,15 @@ Sets up MQTT channels and app routes (to handle Flask page requests)
 Puts long-running tasks into processes that can be tracked and killed
 
 """
-import json
 from __main__ import app, mqtt_client
-
-from functions import func_animation, func_color, func_clear, get_status, \
-    valid_animation, setup_lights_from_configuration, find_ids, parse_animation_text
-from includes import merge_dictionaries
-from multiprocessing import Process
-from flask import render_template, request
-from datetime import datetime
-
+import functions
 import config
-import os
-from colour import Color as Colour
+from includes import merge_dictionaries
 
-running_processes = []  # Database of running processes
-use_processes = True  # Set to False for testing processes, but messes up animations
+import os
+import json
+from flask import render_template, request
+from colour import Color as Colour
 
 
 def handle_mqtt_message(message):
@@ -64,7 +57,7 @@ def handle_mqtt_message(message):
 @app.route("/", methods=['GET', 'POST'])
 def index():
     config.log.info("User is browsing start page")
-    return render_template("index.html", status=get_status().upper())
+    return render_template("index.html", status=functions.get_status().upper())
 
 
 @app.route("/mode/<string:mode>/", methods=["GET"])
@@ -73,7 +66,7 @@ def action_mode(mode):
     config.current_mode = mode
     if mqtt_client:
         mqtt_client.publish(config.setting('mqtt_publish_mode_topic'), mode)
-    setup_lights_from_configuration()
+    functions.setup_lights_from_configuration()
     return "Starting action mode '{}'".format(mode)
 
 
@@ -81,19 +74,12 @@ def action_mode(mode):
 @app.route("/animation/remove")
 def remove_animation_view():
     animation_id = request.args.get('animation_id', None)
-    msg = ''
     if animation_id:
-        global running_processes
         anim_id = int(animation_id)
+        msg = functions.stop_process(anim_id)
+    else:
+        msg = 'Unknown process {}'.format(animation_id)
 
-        for p in running_processes:
-            process = p.get('process')
-            if process.pid == anim_id:
-                msg = "Stopping {} with args {}".format(process.name, p.get('arguments'))
-                config.log.debug(msg)
-                running_processes.remove(p)
-                process.kill()
-                process.join()
     return msg
 
 
@@ -113,26 +99,26 @@ def add_animation_view():
     if density:
         animation_text += ', density:{}'.format(density)
 
-    animation_data = parse_animation_text(animation_text)
+    animation_data = functions.parse_animation_text(animation_text)
 
     valid_data = (type(strand) == str or type(strand) == int) and int(strand) < len(config.light_strips)
 
-    if valid_data and valid_animation(animation):
+    if valid_data and functions.valid_animation(animation):
         light_strip = config.light_strips[int(strand)]
 
         ids = request.args.get('ids', "")
         id_start = request.args.get('id_start', 0)
         id_end = request.args.get('id_end', light_strip.numPixels())
-        id_list = find_ids(ids, id_start, id_end, limit_to=light_strip.numPixels())
+        id_list = functions.find_ids(ids, id_start, id_end, limit_to=light_strip.numPixels())
         if strand and len(id_list):
-            msg = "Animation {} on strip {} for {} lights, options: ".format(animation, strand, len(id_list), animation_text)
+            msg = "Animation {} on strip {} for {} lights: ".format(animation, strand, len(id_list), animation_text)
             start_new_animation(msg)
 
             animation_data = merge_dictionaries(
-                animation_data, {'strip': light_strip, 'strand': strand, 'id_list': id_list,
+                animation_data, {'strip': light_strip, 'strip_id': strand, 'id_list': id_list,
                                  'command': animation_text, 'command_parsed': animation_data})
 
-            start_process(func_animation, msg, animation_data)
+            functions.start_process(functions.func_animation, msg, animation_data)
         else:
             msg = "Animation {} requested but no lights given".format(animation)
 
@@ -140,7 +126,7 @@ def add_animation_view():
         msg = "Animation {} on {} strips total, options: {}".format(animation, len(config.light_strips), animation_text)
         start_new_animation(msg)
         for light_strip in config.light_strips:
-            start_process(func_animation, msg, {'strip': light_strip})
+            functions.start_process(functions.func_animation, msg, {'strip': light_strip})
 
     return msg
 
@@ -153,7 +139,7 @@ def rgb():
     msg = "Set all to RGB: ({}, {}, {})".format(r, g, b)
 
     start_new_animation(msg)
-    func_color(r, g, b)
+    functions.func_color(r, g, b)
     return msg
 
 
@@ -178,7 +164,7 @@ def rgb_string(rgb_text):
     msg = "Set all to RGB: ({}, {}, {}) from '{}'".format(r, g, b, rgb_text)
 
     start_new_animation(msg)
-    func_color(r, g, b)
+    functions.func_color(r, g, b)
     return msg
 
 
@@ -193,7 +179,7 @@ def rgb_color(color_text):
         msg = "Set all to RGB: ({}, {}, {}) from '{}'".format(r, g, b, color_text)
 
         start_new_animation(msg)
-        func_color(r, g, b)
+        functions.func_color(r, g, b)
     except ValueError:
         msg = "Unrecognized Color: {}".format(color_text)
     return msg
@@ -203,7 +189,7 @@ def rgb_color(color_text):
 def off_view():
     msg = "Set all lights to off"
     start_new_animation(msg)
-    func_clear()
+    functions.func_clear()
     return msg
 
 
@@ -212,8 +198,8 @@ def defaults_view():
     msg = "Default Animation"
     config.current_mode = 'default'
     start_new_animation(msg)
-    func_clear()
-    config.light_data = setup_lights_from_configuration(None)
+    functions.func_clear()
+    config.light_data = functions.setup_lights_from_configuration(None)
     return msg
 
 
@@ -227,13 +213,12 @@ def get_mqtt_status():
 
 @app.route('/state')
 def get_state():
-    # TODO: Add CPU stats, current_mode, details on each light, etc
     processes = []
-    for p in running_processes:
+    for p in functions.running_processes:
         process = p.get('process')
         arguments = p.get('arguments')
         processes.append({'process': process.pid, 'name': process.name, 'animation': arguments.get('animation'),
-                          'strand': arguments.get('strand'),
+                          'strand': arguments.get('strip_id'),
                           'started': p.get('started').strftime("%H:%M:%S"), 'id_list': arguments.get('id_list')})
 
     state_obj = {
@@ -293,7 +278,7 @@ def get_strands_as_json():
 # ------------------
 @app.route("/shutdown <param>", methods=["GET"])
 def shutdown(param):
-    stop_everything()
+    functions.stop_everything()
     msg = "Device shut down with parameter: " + param
     config.log.info(msg)
     os.system('sudo shutdown ' + param)
@@ -301,7 +286,7 @@ def shutdown(param):
 
 @app.route("/reboot", methods=["GET"])
 def reboot():
-    stop_everything()
+    functions.stop_everything()
     msg = "Device reboot"
     config.log.info(msg)
     os.system('sudo reboot')
@@ -314,36 +299,3 @@ def start_new_animation(log_message, mqtt_message=None):
     config.log.info(log_message)
     if mqtt_client:
         mqtt_client.publish(config.setting('mqtt_publish_topic'), mqtt_message)
-
-
-# Process handling
-def start_process(ftarget, fname, arg=None):
-    try:
-        if use_processes:
-            global running_processes
-            proc = Process(target=ftarget, name=fname, args=(arg,))
-            config.log.info('Start and append to process list: {} with argument {}'.format(proc.name, arg))
-            running_processes.append({'process': proc, 'arguments': arg, 'started': datetime.now()})
-            proc.daemon = True
-            proc.start()
-        else:
-            # Run directly without adding a process
-            ftarget(arg)
-            proc = None
-
-        return proc
-    except Exception as e:
-        config.log.error("Failed to start process " + fname + ': ' + str(e))
-
-
-def stop_everything():
-    global running_processes
-    if len(running_processes):
-        config.log.info("Stopping long processes: {}".format(len(running_processes)))
-
-        for p in running_processes:
-            process = p.get('process')
-            config.log.debug("Stopping {} with args {}".format(process.name, p.get('arguments')))
-            running_processes.remove(process)
-            process.kill()
-            process.join()

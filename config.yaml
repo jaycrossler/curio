@@ -44,15 +44,15 @@ strands:
       Front engines:
         ids: 1,2,3,4,5
         animations:
-          default: yellow:.1 and orange:.2, pulsing, random
-          engage: blue, pulsing
+          default: yellow:.1 and orange:.2, pulsing, slow
+          engage: orange and blue, pulsing, slow
           stealth: off
-          landing: orange, pulsing, random
-          combat: orange, pulsing
+          landing: black and orange, pulsing, random
+          combat: black and red, pulsing
       Landing lights:
         ids: 6,7,9,10,11
         animations:
-          default: pink:.1, blinking, slow
+          default: off
           engage: off
           stealth: off
           landing: red and white, pulsing
@@ -60,7 +60,7 @@ strands:
       Rear engine exhaust:
         ids: 13,14,15,16,17,18,19
         animations:
-          default: orange:1, pulsing, random
+          default: off
           engage: blue, pulsing
           stealth: off
           landing: orange:.3, pulsing, random
@@ -75,8 +75,8 @@ strands:
         id_start: 0
         id_end: 90
         animations:
-          default: black
+          default: off
           engage: '#40e0d0:.1, pulsing, random, gentle'
-          stealth: gray:.1
-          landing: teal:.2, pulsing, gentle
-          combat: red:.3, warp
+          stealth: black and gray:.1, warp, slow
+          landing: black and #008080:.2, pulsing, gentle
+          combat: white and red:.3, warp, 4
