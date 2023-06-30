@@ -257,6 +257,17 @@ def stop_everything():
             process.kill()
             process.join()
 
+
+def get_process_info_as_object():
+    processes = []
+    for p in running_processes:
+        process = p.get('process')
+        arguments = p.get('arguments')
+        processes.append({'process': process.pid, 'name': process.name, 'animation': arguments.get('animation'),
+                          'strand': arguments.get('strip_id'),
+                          'started': p.get('started').strftime("%H:%M:%S"), 'id_list': arguments.get('id_list')})
+    return processes
+
 # -----------------------------
 # Not Used:
 # -----------------------------

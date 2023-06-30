@@ -30,53 +30,53 @@ strands:
           stealth: off
           landing: yellow, pulsing
           combat: off
-      12:
-        name: Upper gun barrel
-        group: weapons
-        animations:
-          default: off
-          engage: orange, pulsing
-          stealth: off
-          landing: royalblue
-          combat: red, pulsing
-
-    id_ranges:
-      Front engines:
-        ids: 1,2,3,4,5
-        animations:
-          default: yellow:.1 and orange:.2, pulsing, slow
-          engage: orange and blue, pulsing, slow
-          stealth: off
-          landing: black and orange, pulsing, random
-          combat: black and red, pulsing
-      Landing lights:
-        ids: 6,7,9,10,11
-        animations:
-          default: off
-          engage: off
-          stealth: off
-          landing: red and white, pulsing
-          combat: lightblue:.1
-      Rear engine exhaust:
-        ids: 13,14,15,16,17,18,19
-        animations:
-          default: off
-          engage: blue, pulsing
-          stealth: off
-          landing: orange:.3, pulsing, random
-          combat: red:.2, pulsing
-
-  engine led strip:
-    size: 150
-    type: ws2811
-    pin: 21
-    id_ranges:
-      Hyper Drive:
-        id_start: 0
-        id_end: 90
-        animations:
-          default: off
-          engage: '#40e0d0:.1, pulsing, random, gentle'
-          stealth: black and gray:.1, warp, slow
-          landing: black and #008080:.2, pulsing, gentle
-          combat: white and red:.3, warp, 4
+#      12:
+#        name: Upper gun barrel
+#        group: weapons
+#        animations:
+#          default: off
+#          engage: orange, pulsing
+#          stealth: off
+#          landing: royalblue
+#          combat: red, pulsing
+#
+#    id_ranges:
+#      Front engines:
+#        ids: 1,2,3,4,5
+#        animations:
+#          default: yellow:.1 and orange:.2, pulsing, slow
+#          engage: orange and blue, pulsing, slow
+#          stealth: off
+#          landing: black and orange, pulsing, random
+#          combat: black and red, pulsing
+#      Landing lights:
+#        ids: 6,7,9,10,11
+#        animations:
+#          default: off
+#          engage: off
+#          stealth: off
+#          landing: red and white, pulsing
+#          combat: lightblue:.1
+#      Rear engine exhaust:
+#        ids: 13,14,15,16,17,18,19
+#        animations:
+#          default: off
+#          engage: blue, pulsing
+#          stealth: off
+#          landing: orange:.3, pulsing, random
+#          combat: red:.2, pulsing
+#
+#  engine led strip:
+#    size: 150
+#    type: ws2811
+#    pin: 21
+#    id_ranges:
+#      Hyper Drive:
+#        id_start: 0
+#        id_end: 90
+#        animations:
+#          default: off
+#          engage: '#40e0d0:.1, pulsing, random, gentle'
+#          stealth: black and gray:.1, warp, slow
+#          landing: black and #008080:.2, pulsing, gentle
+#          combat: white and red:.3, warp, 4

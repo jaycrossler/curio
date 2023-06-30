@@ -213,13 +213,7 @@ def get_mqtt_status():
 
 @app.route('/state')
 def get_state():
-    processes = []
-    for p in functions.running_processes:
-        process = p.get('process')
-        arguments = p.get('arguments')
-        processes.append({'process': process.pid, 'name': process.name, 'animation': arguments.get('animation'),
-                          'strand': arguments.get('strip_id'),
-                          'started': p.get('started').strftime("%H:%M:%S"), 'id_list': arguments.get('id_list')})
+    processes = functions.get_process_info_as_object()
 
     state_obj = {
         'mqtt_status': get_mqtt_status(),
