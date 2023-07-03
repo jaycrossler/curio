@@ -11,6 +11,8 @@ __status__ = "Development"
 
 import platform
 from animations import *
+import AnimationProcess
+
 from multiprocessing import Process
 from datetime import datetime
 
@@ -191,7 +193,21 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
 
     config.animation_modes = mode_list
 
-    for anim in animations_to_run_for_this_mode:
+    if len(animations_to_run_for_this_mode) > 1:
+        start_multiple_animations(animations_to_run_for_this_mode)
+
+    return light_data
+
+
+def start_multiple_animations(animation_list):
+
+    # Stop all existing animations
+    stop_everything()
+
+    # TODO: Consider a new process for each strip?
+    animation_process = AnimationProcess.AnimationProcess()
+
+    for anim in animation_list:
         animation_text = anim.get('animation')
         id_list = anim.get('leds', [])
         range_name = anim.get('range_name')
@@ -201,18 +217,18 @@ def setup_lights_from_configuration(strands_config=None, set_lights_on=True):
         animation_name = command_parsed.get('animation', 'unknown')
 
         animation_data = {'strip': strip, 'strip_id': strip_id, 'id_list': id_list, 'animation': animation_name,
-                          'command': animation_text, 'command_parsed': command_parsed}
+                          'command': animation_text, 'command_parsed': command_parsed, 'range_name': range_name}
 
-        msg = "Animation {} on strip {} for {} LEDs [{}]: {}".format(animation_name, strand_id, len(id_list),
-                                                                     range_name, animation_text)
+        animation_process.add_animation(animation_data)
 
-        start_process(func_animation, msg, animation_data)
-
-    return light_data
+    animation_process.start()
+    # TODO: Check if this runs after process is killed
+    config.log.info("Animation Process holding {} animations Ended".format(len(animation_list)))
 
 
 # Process handling
 def start_process(ftarget, fname, arg=None):
+    # TODO: Check if there is an animation on that strand, if so kill existing and restart
     try:
         if use_processes:
             global running_processes
