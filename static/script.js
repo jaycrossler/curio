@@ -323,6 +323,10 @@ function check_state() {
                         }
 
                     }
+                    $picker = $('.dropdownModeButton')
+                    if (state.mode && $picker.val() != state.mode) {
+                        $picker.val(state.mode);
+                    }
                     set_animation_list(state);
 
                     set_light_status(state.strands);
@@ -376,14 +380,14 @@ function set_animation_list(state) {
             var ids = anim.id_list;
             var ids_length = '';
             if (ids && ids.length) {
-                ids_length = ids.length;
+                ids_length = ids.split(',').length;
             }
             $('<th>').attr('scope','row').text(i).appendTo($tr);
             $('<td>').text(anim.process).appendTo($tr);
             $('<td>').text(anim.started).appendTo($tr);
             $('<td>').text(anim.animation).appendTo($tr);
             $('<td>').text(anim.strand).appendTo($tr);
-            $('<td>').text(ids_length).appendTo($tr);
+            $('<td>').text(ids_length).attr('title',ids).appendTo($tr);
             $('<td>').attr('class','table-danger')
                 .text("[X]").attr('style', 'cursor:pointer').on('click',function(ev) {
 

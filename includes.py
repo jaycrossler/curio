@@ -6,6 +6,7 @@ Useful included methods and classes
 __author___ = "Jay Crossler"
 __status__ = "Development"
 
+import logging
 import random
 from colour import Color as ColourColor
 
@@ -59,10 +60,15 @@ def clamp(val, min_val, max_val):
 
 def blend_colors(c1: Color, c2: Color, percentage: float) -> Color:
     # c1 and c2 should be Color RGBW objects; perc should be from 0..1
-    r = ((c1.r * (1-percentage)) + (c2.r * percentage))
-    g = ((c1.g * (1-percentage)) + (c2.g * percentage))
-    b = ((c1.b * (1-percentage)) + (c2.b * percentage))
-    return Color(int(r), int(g), int(b))
+    try:
+        r = ((c1.r * (1-percentage)) + (c2.r * percentage))
+        g = ((c1.g * (1-percentage)) + (c2.g * percentage))
+        b = ((c1.b * (1-percentage)) + (c2.b * percentage))
+        output = Color(int(r), int(g), int(b))
+    except AttributeError as e:
+        output = Color(0, 0, 0)
+
+    return output
 
 
 def color_str(color: Color) -> str:

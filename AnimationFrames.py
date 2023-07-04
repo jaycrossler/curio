@@ -6,11 +6,12 @@ from math import sin, pi
 
 class RainbowFrame:
     """Have pixels rotate colors through a 'wheel' rainbow pattern """
-    def __init__(self, strip, pixel_ids=None, config=None):
+    def __init__(self, strip, strip_id, pixel_ids=None, config=None):
         super(RainbowFrame, self).__init__()
 
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
+        self._strip_id = strip_id
         self._pixel_ids = pixel_ids
         self._config = config if config else {}
         self._j = 0
@@ -18,8 +19,18 @@ class RainbowFrame:
         speed = config.get('loop_speed', 3)
         self._delay = remap(1, 6, 40, 1, speed)  # measured in 10ms steps (from 1 to 40)
 
-    def ms_steps(self):
-        return self._delay
+    @property
+    def delay_between_frames(self):
+        # number of 10ms increments to delay before next animation frame should be called
+        return int(self._delay) if self._delay else 5
+
+    @property
+    def strip(self):
+        return self._strip
+
+    @property
+    def strip_id(self):
+        return self._strip_id
 
     def next(self):
         # For the next frame, shift each color by 1 in the 'wheel' of colors, rotating by 256
@@ -36,11 +47,12 @@ class WarpFrame:
     """Pulse pixels repeatedly in a sine wave pattern where the center moves towards
      ending_color and back repeatedly """
 
-    def __init__(self, strip, pixel_ids=None, config=None):
+    def __init__(self, strip, strip_id, pixel_ids=None, config=None):
         super(WarpFrame, self).__init__()
 
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
+        self._strip_id = strip_id
         self._pixel_ids = pixel_ids
         self._config = config if config else {}
 
@@ -49,15 +61,25 @@ class WarpFrame:
 
         # Animation Specific variables
         self._provided_colors = config.get('color_list', [])
-        self._starting_color = self._provided_colors if len(self._provided_colors) > 0 else Color(0, 0, 255)
-        self._ending_color = self._provided_colors if len(self._provided_colors) > 1 else Color(255, 255, 255)
+        self._starting_color = self._provided_colors[0] if len(self._provided_colors) > 0 else Color(0, 0, 255)
+        self._ending_color = self._provided_colors[1] if len(self._provided_colors) > 1 else Color(255, 255, 255)
         self._pulse_height = config.get('pulse_height', 50)
 
         # Build an iterable set of numbers that cycles from 1..50..1..50..1, etc
         self._height_matrix = cycle(chain(range(0, self._pulse_height), range(self._pulse_height, 0, -1)))
 
-    def ms_steps(self):
-        return self._delay
+    @property
+    def delay_between_frames(self):
+        # number of 10ms increments to delay before next animation frame should be called
+        return int(self._delay) if self._delay else 5
+
+    @property
+    def strip(self):
+        return self._strip
+
+    @property
+    def strip_id(self):
+        return self._strip_id
 
     def next(self):
         # Loop through each pixel and blend it toward the target color
@@ -77,11 +99,12 @@ class WarpFrame:
 
 
 class TwinkleFrame:
-    def __init__(self, strip, pixel_ids=None, config=None):
+    def __init__(self, strip, strip_id, pixel_ids=None, config=None):
         super(TwinkleFrame, self).__init__()
 
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
+        self._strip_id = strip_id
         self._pixel_ids = pixel_ids
         self._config = config if config else {}
 
@@ -116,8 +139,18 @@ class TwinkleFrame:
             pixel_to_set = pixel_ids[i] if pixel_ids else i
             strip.setPixelColor(pixel_to_set, starting_color)
 
-    def ms_steps(self):
-        return self._delay
+    @property
+    def delay_between_frames(self):
+        # number of 10ms increments to delay before next animation frame should be called
+        return int(self._delay) if self._delay else 5
+
+    @property
+    def strip(self):
+        return self._strip
+
+    @property
+    def strip_id(self):
+        return self._strip_id
 
     def next(self):
         # Loop through each pixel and randomly blend it towards a target color
@@ -175,11 +208,12 @@ class PulseFrame:
     """Pulse pixels repeatedly in a sine wave pattern where the center moves towards
      ending_color and back repeatedly """
 
-    def __init__(self, strip, pixel_ids=None, config=None):
+    def __init__(self, strip, strip_id, pixel_ids=None, config=None):
         super(PulseFrame, self).__init__()
 
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
+        self._strip_id = strip_id
         self._pixel_ids = pixel_ids
         self._config = config if config else {}
 
@@ -188,8 +222,8 @@ class PulseFrame:
 
         # Animation Specific variables
         self._provided_colors = config.get('color_list', [])
-        self._starting_color = self._provided_colors if len(self._provided_colors) > 0 else Color(0, 0, 0)
-        self._ending_color = self._provided_colors if len(self._provided_colors) > 1 else Color(255, 255, 255)
+        self._starting_color = self._provided_colors[0] if len(self._provided_colors) > 0 else Color(0, 0, 0)
+        self._ending_color = self._provided_colors[1] if len(self._provided_colors) > 1 else Color(255, 255, 255)
 
         self._color_variations = config.get('color_variations', [])
         self._pulse_height = config.get('pulse_height', 50)
@@ -199,8 +233,18 @@ class PulseFrame:
         # Build an iterable set of numbers that cycles from 1..50..1..50..1, etc
         self._height_matrix = cycle(chain(range(0, self._pulse_height), range(self._pulse_height, 0, -1)))
 
-    def ms_steps(self):
-        return self._delay
+    @property
+    def delay_between_frames(self):
+        # number of 10ms increments to delay before next animation frame should be called
+        return int(self._delay) if self._delay else 5
+
+    @property
+    def strip(self):
+        return self._strip
+
+    @property
+    def strip_id(self):
+        return self._strip_id
 
     def next(self):
         # Loop through each pixel and blend it toward the target color
@@ -238,11 +282,12 @@ class PulseFrame:
 class BlinkFrame:
     """Blink pixels repeatedly through each color in list """
 
-    def __init__(self, strip, pixel_ids=None, config=None):
+    def __init__(self, strip, strip_id, pixel_ids=None, config=None):
         super(BlinkFrame, self).__init__()
 
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
+        self._strip_id = strip_id
         self._pixel_ids = pixel_ids
         self._config = config if config else {}
 
@@ -257,8 +302,18 @@ class BlinkFrame:
         if len(self._provided_colors) < 2:
             self._provided_colors.append(Color(0, 0, 0))
 
-    def ms_steps(self):
-        return self._delay
+    @property
+    def delay_between_frames(self):
+        # number of 10ms increments to delay before next animation frame should be called
+        return int(self._delay) if self._delay else 5
+
+    @property
+    def strip(self):
+        return self._strip
+
+    @property
+    def strip_id(self):
+        return self._strip_id
 
     def next(self):
         # Set all pixels to next color in sequence
@@ -275,11 +330,12 @@ class BlinkFrame:
 class BlinkenlichtFrame:
     """Blink pixels through each color in list in a slow on/off style, supporting randomness """
 
-    def __init__(self, strip, pixel_ids=None, config=None):
+    def __init__(self, strip, strip_id, pixel_ids=None, config=None):
         super(BlinkenlichtFrame, self).__init__()
 
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
+        self._strip_id = strip_id
         self._pixel_ids = pixel_ids
         self._config = config if config else {}
 
@@ -314,8 +370,18 @@ class BlinkenlichtFrame:
             pixel_to_set = pixel_ids[i] if pixel_ids else i
             strip.setPixelColor(pixel_to_set, self._starting_color)
 
-    def ms_steps(self):
-        return self._delay
+    @property
+    def delay_between_frames(self):
+        # number of 10ms increments to delay before next animation frame should be called
+        return int(self._delay) if self._delay else 5
+
+    @property
+    def strip(self):
+        return self._strip
+
+    @property
+    def strip_id(self):
+        return self._strip_id
 
     def next(self):
         # Loop through each pixel and randomly blend it towards a target color

@@ -207,6 +207,10 @@ def start_multiple_animations(animation_list):
     # TODO: Consider a new process for each strip?
     animation_process = AnimationProcess.AnimationProcess()
 
+    details_anim = []
+    details_strands = []
+    details_ids = []
+
     for anim in animation_list:
         animation_text = anim.get('animation')
         id_list = anim.get('leds', [])
@@ -216,12 +220,25 @@ def start_multiple_animations(animation_list):
         command_parsed = parse_animation_text(animation_text)
         animation_name = command_parsed.get('animation', 'unknown')
 
+        details_anim.append(animation_name)
+        details_strands.append(strip_id)
+        details_ids += id_list
+
         animation_data = {'strip': strip, 'strip_id': strip_id, 'id_list': id_list, 'animation': animation_name,
                           'command': animation_text, 'command_parsed': command_parsed, 'range_name': range_name}
 
         animation_process.add_animation(animation_data)
 
+    # TODO: Add more/better details to this list of process info
+    process_details = {'animation': ", ".join(details_anim),
+                       'strip_id': ", ".join(map(str, details_strands)),
+                       'id_list': ", ".join(map(str, details_ids))}
+
+    global running_processes
+    running_processes.append({'process': animation_process, 'arguments': process_details, 'started': datetime.now()})
+    animation_process.daemon = True
     animation_process.start()
+
     # TODO: Check if this runs after process is killed
     config.log.info("Animation Process holding {} animations Ended".format(len(animation_list)))
 
@@ -278,10 +295,14 @@ def get_process_info_as_object():
     processes = []
     for p in running_processes:
         process = p.get('process')
-        arguments = p.get('arguments')
-        processes.append({'process': process.pid, 'name': process.name, 'animation': arguments.get('animation'),
-                          'strand': arguments.get('strip_id'),
-                          'started': p.get('started').strftime("%H:%M:%S"), 'id_list': arguments.get('id_list')})
+        arguments = p.get('arguments', {})
+
+        processes.append({'process': process.pid,
+                          'name': process.name,
+                          'started': p.get('started').strftime("%H:%M:%S"),
+                          'animation': arguments.get('animation', 'unknown'),
+                          'strand': arguments.get('strip_id', 'unknown'),
+                          'id_list': arguments.get('id_list', 'unknown')})
     return processes
 
 # -----------------------------
