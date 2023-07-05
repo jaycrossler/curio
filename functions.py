@@ -281,14 +281,15 @@ def stop_process(process_id):
 def stop_everything():
     global running_processes
     if len(running_processes):
-        config.log.info("Stopping long processes: {}".format(len(running_processes)))
+        config.log.info("Stopping {} long processes".format(len(running_processes)))
 
         for p in running_processes:
             process = p.get('process')
-            config.log.debug("Stopping {} with args {}".format(process.name, p.get('arguments')))
-            running_processes.remove(process)
+            config.log.debug("-Stopping {} with args {}".format(process.name, p.get('arguments')))
             process.kill()
             process.join()
+
+        running_processes = []
 
 
 def get_process_info_as_object():

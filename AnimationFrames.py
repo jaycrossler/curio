@@ -53,7 +53,7 @@ class WarpFrame:
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
         self._strip_id = strip_id
-        self._pixel_ids = pixel_ids
+        self._pixel_ids = pixel_ids if pixel_ids else range(self._pixels_count)
         self._config = config if config else {}
 
         self._speed = speed = config.get('loop_speed', 3)
@@ -105,7 +105,7 @@ class TwinkleFrame:
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
         self._strip_id = strip_id
-        self._pixel_ids = pixel_ids
+        self._pixel_ids = pixel_ids if pixel_ids else range(self._pixels_count)
         self._config = config if config else {}
 
         self._speed = speed = config.get('loop_speed', 3)
@@ -214,7 +214,7 @@ class PulseFrame:
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
         self._strip_id = strip_id
-        self._pixel_ids = pixel_ids
+        self._pixel_ids = pixel_ids if pixel_ids else range(self._pixels_count)
         self._config = config if config else {}
 
         self._speed = speed = config.get('loop_speed', 3)
@@ -288,7 +288,7 @@ class BlinkFrame:
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
         self._strip_id = strip_id
-        self._pixel_ids = pixel_ids
+        self._pixel_ids = pixel_ids if pixel_ids else range(self._pixels_count)
         self._config = config if config else {}
 
         self._speed = speed = config.get('loop_speed', 3)
@@ -336,7 +336,7 @@ class BlinkenlichtFrame:
         self._pixels_count = len(pixel_ids) if pixel_ids else strip.numPixels()
         self._strip = strip
         self._strip_id = strip_id
-        self._pixel_ids = pixel_ids
+        self._pixel_ids = pixel_ids if pixel_ids else range(self._pixels_count)
         self._config = config if config else {}
 
         self._speed = speed = config.get('loop_speed', 3)
